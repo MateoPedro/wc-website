@@ -1,0 +1,69 @@
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "tailwindcss";
+
+@theme {
+  --color-pt-green: #006600;
+  --color-pt-green-bright: #00cc44;
+  --color-pt-red: #CC0000;
+  --color-pt-gold: #C8A200;
+  --color-pt-dark: #080808;
+  --color-pt-surface: #101010;
+  --color-pt-border: #1a1a1a;
+
+  --font-display: 'Bebas Neue', sans-serif;
+  --font-sans: 'Inter', system-ui, sans-serif;
+}
+
+/* Lenis */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background-color: #080808;
+    color: #ffffff;
+    font-family: 'Inter', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  :root {
+    --background: oklch(0.08 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.1 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.1 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.985 0 0);
+    --primary-foreground: oklch(0.1 0 0);
+    --secondary: oklch(0.15 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.15 0 0);
+    --muted-foreground: oklch(0.556 0 0);
+    --accent: oklch(0.15 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 8%);
+    --input: oklch(1 0 0 / 10%);
+    --ring: oklch(0.556 0 0);
+    --radius: 0.625rem;
+  }
+}
