@@ -10,7 +10,14 @@ const tracks = [
   { n: '07', title: 'We Will Rock You', artist: 'Queen', dur: '2:02' },
 ]
 
-export default function PlaylistSection() {
+function getSpotifyEmbedUrl(url: string): string | null {
+  const match = url.match(/playlist\/([a-zA-Z0-9]+)/)
+  if (!match) return null
+  return `https://open.spotify.com/embed/playlist/${match[1]}?utm_source=generator&theme=0`
+}
+
+export default function PlaylistSection({ spotifyUrl }: { spotifyUrl?: string }) {
+  const embedUrl = spotifyUrl ? getSpotifyEmbedUrl(spotifyUrl) : null
   return (
     <div className="relative min-h-screen" style={{ background: '#080808' }}>
       <div
@@ -74,7 +81,26 @@ export default function PlaylistSection() {
               The trip's soundtrack, live from Spotify. Updated on the road.
             </motion.p>
 
-            {/* Vinyl */}
+            {/* Spotify embed or vinyl placeholder */}
+            {embedUrl ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3, duration: 0.8 }}
+                className="mt-10 rounded-2xl overflow-hidden"
+                style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+              >
+                <iframe
+                  src={embedUrl}
+                  width="100%"
+                  height="380"
+                  allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                  loading="lazy"
+                  style={{ border: 'none', display: 'block' }}
+                />
+              </motion.div>
+            ) : (
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
               whileInView={{ opacity: 1, scale: 1 }}
@@ -124,17 +150,20 @@ export default function PlaylistSection() {
                 Spotify
               </div>
             </motion.div>
+            )}
 
-            <motion.p
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              transition={{ delay: 0.5 }}
-              className="mt-10 text-[11px] tracking-wider"
-              style={{ color: 'rgba(255,255,255,0.2)' }}
-            >
-              Admin pastes a Spotify URL → embed appears here · Phase 7
-            </motion.p>
+            {!embedUrl && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.5 }}
+                className="mt-10 text-[11px] tracking-wider"
+                style={{ color: 'rgba(255,255,255,0.2)' }}
+              >
+                Admin pastes a Spotify URL → embed appears here · Phase 7
+              </motion.p>
+            )}
           </div>
 
           {/* Track list */}

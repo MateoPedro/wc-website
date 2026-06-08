@@ -5,13 +5,13 @@ import { useActiveSection } from '../hooks/useActiveSection'
 
 const SECTIONS = ['hero', 'map', 'scores', 'playlist']
 
-const links = [
+const allLinks = [
   { id: 'map', label: 'Map' },
   { id: 'scores', label: 'Scores' },
   { id: 'playlist', label: 'Playlist' },
 ]
 
-export default function Navbar() {
+export default function Navbar({ showScores = true }: { showScores?: boolean }) {
   const [scrolled, setScrolled] = useState(false)
   const active = useActiveSection(SECTIONS)
 
@@ -61,7 +61,7 @@ export default function Navbar() {
 
         {/* Nav links */}
         <div className="flex items-center gap-8">
-          {links.map((link) => (
+          {allLinks.filter(l => l.id !== 'scores' || showScores).map((link) => (
             <button
               key={link.id}
               onClick={() => scrollTo(`#${link.id}`)}

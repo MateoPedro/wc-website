@@ -19,7 +19,8 @@ const fadeIn = {
   show: { opacity: 1, transition: { duration: 1.2 } },
 }
 
-export default function HeroSection() {
+export default function HeroSection({ heroMessage }: { heroMessage?: string }) {
+  void heroMessage // available for future use in subtitle
   const ref = useRef<HTMLDivElement>(null)
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start start', 'end start'] })
 
