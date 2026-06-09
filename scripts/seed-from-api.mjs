@@ -30,27 +30,31 @@ if (!SERVICE_KEY)   { console.error('Missing SUPABASE_SERVICE_ROLE_KEY in .env.l
 const supabase = createClient(SUPABASE_URL, SERVICE_KEY)
 
 // ── Known WC 2026 venue coordinates ──────────────────────
-// Covers all 16 host cities — we map venue name → city + coords
 const VENUE_MAP = {
-  // USA
-  'MetLife Stadium':            { city: 'New York / New Jersey', lat: 40.8135, lng: -74.0745 },
+  'MetLife Stadium':            { city: 'New York',              lat: 40.8135, lng: -74.0745 },
   'SoFi Stadium':               { city: 'Los Angeles',           lat: 33.9535, lng: -118.3392 },
   'AT&T Stadium':               { city: 'Dallas',                lat: 32.7480, lng: -97.0930 },
   'Arrowhead Stadium':          { city: 'Kansas City',           lat: 39.0489, lng: -94.4839 },
-  'Levi\'s Stadium':            { city: 'San Francisco Bay Area', lat: 37.4032, lng: -121.9698 },
+  "Levi's Stadium":             { city: 'San Francisco',         lat: 37.4032, lng: -121.9698 },
   'Hard Rock Stadium':          { city: 'Miami',                 lat: 25.9580, lng: -80.2389 },
   'NRG Stadium':                { city: 'Houston',               lat: 29.6847, lng: -95.4107 },
   'Lincoln Financial Field':    { city: 'Philadelphia',          lat: 39.9008, lng: -75.1675 },
   'Geodis Park':                { city: 'Nashville',             lat: 36.1305, lng: -86.7718 },
   'Empower Field at Mile High': { city: 'Denver',                lat: 39.7439, lng: -105.0201 },
-  'Seattle Sounders FC Stadium':{ city: 'Seattle',               lat: 47.5952, lng: -122.3316 },
-  // Canada
+  'Lumen Field':                { city: 'Seattle',               lat: 47.5952, lng: -122.3316 },
   'BC Place':                   { city: 'Vancouver',             lat: 49.2768, lng: -123.1118 },
   'BMO Field':                  { city: 'Toronto',               lat: 43.6332, lng: -79.4183 },
-  // Mexico
   'Estadio Azteca':             { city: 'Mexico City',           lat: 19.3029, lng: -99.1505 },
   'Estadio Akron':              { city: 'Guadalajara',           lat: 20.6888, lng: -103.4592 },
   'Estadio BBVA':               { city: 'Monterrey',             lat: 25.6693, lng: -100.2436 },
+}
+
+// ── Portugal Group K venue overrides (free API has no venue field) ──
+// Source: FOX Sports / Sky Sports confirmed fixtures
+const PORTUGAL_VENUE_OVERRIDES = {
+  537403: { venue: 'NRG Stadium',       ...VENUE_MAP['NRG Stadium'] },       // Jun 17 vs Congo DR
+  537405: { venue: 'NRG Stadium',       ...VENUE_MAP['NRG Stadium'] },       // Jun 23 vs Uzbekistan
+  537407: { venue: 'Hard Rock Stadium', ...VENUE_MAP['Hard Rock Stadium'] }, // Jun 27 vs Colombia
 }
 
 // Fallback: derive city from venue string
@@ -119,8 +123,9 @@ async function seed() {
 
   // Build destination rows (one per match)
   const destinations = matches.map((m, i) => {
-    const venue = m.venue ?? ''
-    const coords = VENUE_MAP[venue] ?? venueToCity(venue) ?? { city: venue, lat: 39.5, lng: -98.35 }
+    const override = PORTUGAL_VENUE_OVERRIDES[m.id]
+    const venue = override?.venue ?? m.venue ?? ''
+    const coords = override ?? VENUE_MAP[venue] ?? venueToCity(venue) ?? { city: 'TBD', lat: 39.5, lng: -98.35 }
 
     const opponent = m.homeTeam.id === PORTUGAL_ID ? m.awayTeam.name : m.homeTeam.name
     const date = formatDate(m.utcDate)
@@ -130,7 +135,7 @@ async function seed() {
       city: coords.city,
       lat: coords.lat,
       lng: coords.lng,
-      description: `${stage} vs ${opponent} at ${venue}`,
+      description: `${stage} vs ${opponent} · ${venue}`,
       date_range: date,
       match_info: {
         matchId: m.id,

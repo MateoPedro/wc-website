@@ -7,19 +7,167 @@ import type { Destination, Traveler } from '../types'
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
 
-// ── Marker helpers (vanilla DOM — no portal overhead) ─────
+// ── Group destinations by city ─────────────────────────────
+
+function groupByCity(destinations: Destination[]): Destination[][] {
+  const map = new Map<string, Destination[]>()
+  for (const d of destinations) {
+    if (!map.has(d.city)) map.set(d.city, [])
+    map.get(d.city)!.push(d)
+  }
+  return Array.from(map.values())
+}
+
+// ── Satellite image pin ────────────────────────────────────
+
+function makeDestinationEl(group: Destination[], token: string): HTMLElement {
+  const primary = group[0]
+  const matchCount = group.length
+  const matchInfo = group[0].match_info as Record<string, unknown> | null
+
+  // Mapbox satellite static image of the stadium
+  const zoom = 14
+  const imgUrl =
+    `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/` +
+    `${primary.lng},${primary.lat},${zoom},0/280x160@2x?access_token=${token}`
+
+  // Opponent label (first match)
+  const opponent = matchInfo ? String(matchInfo.opponent ?? '') : ''
+  const venue = matchInfo ? String(matchInfo.venue ?? '') : ''
+
+  // Dates across all matches
+  const dates = group.map((d) => d.date_range).filter(Boolean).join(' · ')
+
+  const wrap = document.createElement('div')
+  wrap.style.cssText = `
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    filter: drop-shadow(0 4px 20px rgba(0,0,0,0.7));
+    transition: transform 0.18s ease;
+  `
+  wrap.onmouseenter = () => (wrap.style.transform = 'scale(1.05) translateY(-2px)')
+  wrap.onmouseleave = () => (wrap.style.transform = 'scale(1) translateY(0)')
+
+  const card = document.createElement('div')
+  card.style.cssText = `
+    width: 160px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1.5px solid rgba(0,204,68,0.35);
+    background: #0a0a0a;
+  `
+
+  // Stadium satellite image
+  const imgWrap = document.createElement('div')
+  imgWrap.style.cssText = 'position:relative;width:160px;height:90px;overflow:hidden;'
+
+  const img = document.createElement('img')
+  img.src = imgUrl
+  img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;'
+  img.onerror = () => { imgWrap.style.background = '#0d1a0d' }
+
+  // Gradient overlay on image
+  const imgOverlay = document.createElement('div')
+  imgOverlay.style.cssText = `
+    position:absolute;inset:0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.7) 100%);
+  `
+
+  // Match count badge (top right, only if >1)
+  if (matchCount > 1) {
+    const badge = document.createElement('div')
+    badge.style.cssText = `
+      position:absolute;top:7px;right:7px;
+      background:rgba(0,0,0,0.75);
+      border:1px solid rgba(0,204,68,0.5);
+      border-radius:20px;padding:2px 8px;
+      font-size:10px;font-weight:600;color:#00cc44;
+      font-family:Inter,sans-serif;
+    `
+    badge.textContent = `${matchCount} matches`
+    imgWrap.appendChild(badge)
+  }
+
+  imgWrap.appendChild(img)
+  imgWrap.appendChild(imgOverlay)
+
+  // Info panel
+  const info = document.createElement('div')
+  info.style.cssText = `
+    padding: 9px 11px 10px;
+    background: rgba(8,8,8,0.97);
+  `
+
+  const cityEl = document.createElement('div')
+  cityEl.style.cssText = `
+    font-size: 13px; font-weight: 700; color: #fff;
+    font-family: Inter, sans-serif; letter-spacing: 0.01em;
+    line-height: 1.2;
+  `
+  cityEl.textContent = primary.city
+
+  const detailEl = document.createElement('div')
+  detailEl.style.cssText = `
+    font-size: 10px; color: rgba(255,255,255,0.4);
+    font-family: Inter, sans-serif; margin-top: 3px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  `
+  detailEl.textContent = matchCount === 1
+    ? `vs ${opponent} · ${dates}`
+    : `${dates}`
+
+  const venueEl = document.createElement('div')
+  venueEl.style.cssText = `
+    font-size: 9px; color: rgba(0,204,68,0.6);
+    font-family: Inter, sans-serif; margin-top: 2px;
+    letter-spacing: 0.03em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  `
+  venueEl.textContent = venue
+
+  info.appendChild(cityEl)
+  info.appendChild(detailEl)
+  if (venue) info.appendChild(venueEl)
+
+  card.appendChild(imgWrap)
+  card.appendChild(info)
+
+  // Arrow pointer
+  const arrow = document.createElement('div')
+  arrow.style.cssText = `
+    width: 0; height: 0;
+    border-left: 8px solid transparent;
+    border-right: 8px solid transparent;
+    border-top: 10px solid rgba(8,8,8,0.97);
+    margin-top: -1px;
+  `
+
+  wrap.appendChild(card)
+  wrap.appendChild(arrow)
+  return wrap
+}
+
+// ── Traveler marker ────────────────────────────────────────
 
 function initials(name: string): string {
   return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
 }
 
+function makeInitialsEl(name: string, gold: boolean): HTMLDivElement {
+  const el = document.createElement('div')
+  el.style.cssText = `font-size:13px;font-weight:600;color:${gold ? '#C8A200' : '#fff'};font-family:Inter,sans-serif;`
+  el.textContent = initials(name)
+  return el
+}
+
 function makeTravelerEl(t: Traveler): HTMLElement {
   const wrap = document.createElement('div')
-  wrap.style.cssText =
-    'display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;'
+  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;'
 
-  const ring = document.createElement('div')
   const gold = t.is_owner
+  const ring = document.createElement('div')
   ring.style.cssText = `
     width:46px;height:46px;border-radius:50%;
     border:2.5px solid ${gold ? '#C8A200' : 'rgba(255,255,255,0.75)'};
@@ -54,34 +202,7 @@ function makeTravelerEl(t: Traveler): HTMLElement {
   return wrap
 }
 
-function makeInitialsEl(name: string, gold: boolean): HTMLDivElement {
-  const el = document.createElement('div')
-  el.style.cssText = `
-    font-size:13px;font-weight:600;
-    color:${gold ? '#C8A200' : '#fff'};
-    font-family:Inter,sans-serif;
-  `
-  el.textContent = initials(name)
-  return el
-}
-
-function makeDestinationEl(): HTMLElement {
-  const wrap = document.createElement('div')
-  wrap.style.cssText =
-    'display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;'
-
-  const dot = document.createElement('div')
-  dot.style.cssText = `
-    width:10px;height:10px;border-radius:50%;
-    background:#00cc44;border:1.5px solid rgba(255,255,255,0.25);
-    box-shadow:0 0 8px #00cc44,0 0 18px rgba(0,204,68,0.35);
-  `
-
-  wrap.appendChild(dot)
-  return wrap
-}
-
-function travelerPopup(t: Traveler): string {
+function travelerPopupHTML(t: Traveler): string {
   return `
     <div style="font-family:Inter,sans-serif;min-width:150px;">
       <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:3px;">${t.name}</div>
@@ -89,7 +210,6 @@ function travelerPopup(t: Traveler): string {
       ${t.note ? `<div style="font-size:12px;color:rgba(255,255,255,0.65);line-height:1.5;">${t.note}</div>` : ''}
     </div>`
 }
-
 
 // ── Animated dashed route ──────────────────────────────────
 
@@ -107,9 +227,8 @@ function startRouteAnimation(map: mapboxgl.Map): number {
     const next = Math.floor(ts / 60) % DASH_SEQUENCES.length
     if (next !== step) {
       step = next
-      if (map.getLayer('route-animated')) {
+      if (map.getLayer('route-animated'))
         map.setPaintProperty('route-animated', 'line-dasharray', DASH_SEQUENCES[step])
-      }
     }
     rafId = requestAnimationFrame(tick)
   }
@@ -125,17 +244,15 @@ export default function MapSection() {
   const rafRef = useRef<number>(0)
   const markersRef = useRef<mapboxgl.Marker[]>([])
 
-  const [activeDestination, setActiveDestination] = useState<Destination | null>(null)
+  const [activeGroup, setActiveGroup] = useState<Destination[] | null>(null)
 
   const { data: destinations } = useDestinations()
   const { data: travelers } = useTravelers()
 
-  // Init map
   useEffect(() => {
     if (!TOKEN || !containerRef.current || mapRef.current) return
 
     mapboxgl.accessToken = TOKEN
-
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: 'mapbox://styles/mapbox/dark-v11',
@@ -145,14 +262,10 @@ export default function MapSection() {
       attributionControl: false,
     })
 
-    map.on('error', (e) => console.error('Mapbox error:', e.error?.message))
-
-    // Force resize after a tick in case dimensions weren't ready at init
+    map.on('error', (e) => console.error('Mapbox:', e.error?.message))
     setTimeout(() => map.resize(), 100)
-
     map.addControl(new mapboxgl.AttributionControl({ compact: true }))
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right')
-
     mapRef.current = map
 
     return () => {
@@ -164,62 +277,53 @@ export default function MapSection() {
     }
   }, [])
 
-  // Add destinations + route when data arrives
+  // Destinations + route
   useEffect(() => {
     const map = mapRef.current
     if (!map || destinations.length === 0) return
 
     const apply = () => {
-      const coords = destinations.map((d) => [d.lng, d.lat] as [number, number])
+      const groups = groupByCity(destinations)
 
-      // Route base (solid, dim)
+      // Route uses one coordinate per unique city
+      const routeCoords = groups.map((g) => [g[0].lng, g[0].lat] as [number, number])
+
       if (!map.getSource('route')) {
         map.addSource('route', {
           type: 'geojson',
-          data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } },
+          data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: routeCoords } },
         })
         map.addLayer({
-          id: 'route-base',
-          type: 'line',
-          source: 'route',
+          id: 'route-base', type: 'line', source: 'route',
           layout: { 'line-join': 'round', 'line-cap': 'round' },
           paint: { 'line-color': '#00cc44', 'line-width': 1.5, 'line-opacity': 0.25 },
         })
         map.addLayer({
-          id: 'route-animated',
-          type: 'line',
-          source: 'route',
+          id: 'route-animated', type: 'line', source: 'route',
           layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: {
-            'line-color': '#00cc44',
-            'line-width': 2.5,
-            'line-opacity': 0.85,
-            'line-dasharray': [0, 2, 4],
-          },
+          paint: { 'line-color': '#00cc44', 'line-width': 2.5, 'line-opacity': 0.85, 'line-dasharray': [0, 2, 4] },
         })
         rafRef.current = startRouteAnimation(map)
       }
 
-      // Destination markers — open panel on click instead of popup
-      destinations.forEach((dest) => {
-        const el = makeDestinationEl()
-        el.addEventListener('click', () => setActiveDestination(dest))
-        const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
-          .setLngLat([dest.lng, dest.lat])
+      // One marker per city group
+      groups.forEach((group) => {
+        const el = makeDestinationEl(group, TOKEN)
+        el.addEventListener('click', () => setActiveGroup(group))
+        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+          .setLngLat([group[0].lng, group[0].lat])
           .addTo(map)
         markersRef.current.push(marker)
       })
 
-      // Fit to all destinations
-      if (destinations.length > 1) {
-        const bounds = destinations.reduce(
-          (b, d) => b.extend([d.lng, d.lat] as [number, number]),
-          new mapboxgl.LngLatBounds(
-            [destinations[0].lng, destinations[0].lat],
-            [destinations[0].lng, destinations[0].lat],
-          ),
+      // Fit bounds
+      const allCoords = groups.map((g) => [g[0].lng, g[0].lat] as [number, number])
+      if (allCoords.length > 1) {
+        const bounds = allCoords.reduce(
+          (b, c) => b.extend(c),
+          new mapboxgl.LngLatBounds(allCoords[0], allCoords[0]),
         )
-        map.fitBounds(bounds, { padding: 140, maxZoom: 7, duration: 2200, essential: true })
+        map.fitBounds(bounds, { padding: 180, maxZoom: 7, duration: 2200, essential: true })
       }
     }
 
@@ -227,7 +331,7 @@ export default function MapSection() {
     else map.once('load', apply)
   }, [destinations])
 
-  // Add traveler markers when data arrives
+  // Traveler markers
   useEffect(() => {
     const map = mapRef.current
     if (!map || travelers.length === 0) return
@@ -236,7 +340,7 @@ export default function MapSection() {
       travelers.forEach((t) => {
         const el = makeTravelerEl(t)
         const popup = new mapboxgl.Popup({ closeButton: false, className: 'map-popup', offset: 30 })
-          .setHTML(travelerPopup(t))
+          .setHTML(travelerPopupHTML(t))
         const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([t.lng, t.lat])
           .setPopup(popup)
@@ -249,23 +353,13 @@ export default function MapSection() {
     else map.once('load', apply)
   }, [travelers])
 
-  // ── No token fallback ──────────────────────────────────
-
   if (!TOKEN) {
     return (
-      <div className="relative h-screen flex flex-col" style={{ background: '#070d07' }}>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="text-center space-y-3">
-            <div
-              className="text-xs tracking-[0.3em] uppercase"
-              style={{ color: 'rgba(255,255,255,0.2)' }}
-            >
-              Map unavailable
-            </div>
-            <div className="text-sm" style={{ color: 'rgba(255,255,255,0.35)' }}>
-              Add <code style={{ color: '#00cc44' }}>VITE_MAPBOX_TOKEN</code> to .env.local
-            </div>
-          </div>
+      <div style={{ position: 'relative', width: '100%', height: '100vh', background: '#070d07' }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
+            Add <code style={{ color: '#00cc44' }}>VITE_MAPBOX_TOKEN</code> to .env.local
+          </p>
         </div>
       </div>
     )
@@ -273,63 +367,45 @@ export default function MapSection() {
 
   return (
     <div style={{ position: 'relative', width: '100%', height: '100vh' }}>
-      {/* Mapbox canvas */}
       <div ref={containerRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
 
-      {/* Dark gradient vignette on edges */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            'linear-gradient(to bottom, rgba(8,8,8,0.55) 0%, transparent 18%, transparent 80%, rgba(8,8,8,0.4) 100%),' +
-            'linear-gradient(to right, rgba(8,8,8,0.3) 0%, transparent 15%, transparent 85%, rgba(8,8,8,0.3) 100%)',
-        }}
-      />
+      {/* Vignette */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background:
+          'linear-gradient(to bottom, rgba(8,8,8,0.55) 0%, transparent 18%, transparent 80%, rgba(8,8,8,0.4) 100%),' +
+          'linear-gradient(to right, rgba(8,8,8,0.3) 0%, transparent 15%, transparent 85%, rgba(8,8,8,0.3) 100%)',
+      }} />
 
-      {/* Section label overlay */}
+      {/* Section label */}
       <motion.div
-        initial={{ opacity: 0 }}
-        whileInView={{ opacity: 1 }}
-        viewport={{ once: true }}
+        initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }}
         transition={{ duration: 0.8, delay: 0.3 }}
         className="absolute top-20 left-8 flex items-center gap-4 pointer-events-none"
       >
-        <span className="text-[10px] tracking-[0.4em] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>
-          01
-        </span>
+        <span className="text-[10px] tracking-[0.4em] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>01</span>
         <div className="h-px w-10" style={{ background: 'rgba(255,255,255,0.12)' }} />
-        <span className="text-[10px] tracking-[0.4em] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>
-          The Journey
-        </span>
+        <span className="text-[10px] tracking-[0.4em] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>The Journey</span>
       </motion.div>
 
-      {/* Destination panel + lightbox */}
-      <DestinationPanel
-        destination={activeDestination}
-        onClose={() => setActiveDestination(null)}
-      />
-
-      {/* Traveler count badge */}
+      {/* Traveler count */}
       {travelers.length > 0 && (
         <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
+          initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.5 }}
           className="absolute bottom-10 left-8 flex items-center gap-3"
         >
-          <span
-            className="w-1.5 h-1.5 rounded-full animate-pulse"
-            style={{ background: '#00cc44' }}
-          />
-          <span
-            className="text-[11px] tracking-[0.2em] uppercase"
-            style={{ color: 'rgba(255,255,255,0.4)' }}
-          >
-            {travelers.length} travelers · {destinations.length} cities
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#00cc44' }} />
+          <span className="text-[11px] tracking-[0.2em] uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>
+            {travelers.length} travelers · {groupByCity(destinations).length} cities
           </span>
         </motion.div>
       )}
+
+      {/* Destination panel */}
+      <DestinationPanel
+        destinations={activeGroup}
+        onClose={() => setActiveGroup(null)}
+      />
     </div>
   )
 }
