@@ -1,7 +1,8 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
 import { motion } from 'framer-motion'
 import { useDestinations, useTravelers } from '../hooks/useSupabase'
+import DestinationPanel from '../components/DestinationPanel'
 import type { Destination, Traveler } from '../types'
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
@@ -89,15 +90,6 @@ function travelerPopup(t: Traveler): string {
     </div>`
 }
 
-function destinationPopup(d: Destination): string {
-  return `
-    <div style="font-family:Inter,sans-serif;min-width:160px;">
-      <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:3px;">${d.city}</div>
-      ${d.date_range ? `<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:6px;">${d.date_range}</div>` : ''}
-      ${d.description ? `<div style="font-size:12px;color:rgba(255,255,255,0.65);line-height:1.5;">${d.description}</div>` : ''}
-      <div style="font-size:10px;color:rgba(255,255,255,0.25);margin-top:8px;">Photos coming soon</div>
-    </div>`
-}
 
 // ── Animated dashed route ──────────────────────────────────
 
@@ -132,6 +124,8 @@ export default function MapSection() {
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const rafRef = useRef<number>(0)
   const markersRef = useRef<mapboxgl.Marker[]>([])
+
+  const [activeDestination, setActiveDestination] = useState<Destination | null>(null)
 
   const { data: destinations } = useDestinations()
   const { data: travelers } = useTravelers()
@@ -206,14 +200,12 @@ export default function MapSection() {
         rafRef.current = startRouteAnimation(map)
       }
 
-      // Destination markers
+      // Destination markers — open panel on click instead of popup
       destinations.forEach((dest) => {
         const el = makeDestinationEl()
-        const popup = new mapboxgl.Popup({ closeButton: false, className: 'map-popup', offset: 14 })
-          .setHTML(destinationPopup(dest))
+        el.addEventListener('click', () => setActiveDestination(dest))
         const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
           .setLngLat([dest.lng, dest.lat])
-          .setPopup(popup)
           .addTo(map)
         markersRef.current.push(marker)
       })
@@ -310,6 +302,12 @@ export default function MapSection() {
           The Journey
         </span>
       </motion.div>
+
+      {/* Destination panel + lightbox */}
+      <DestinationPanel
+        destination={activeDestination}
+        onClose={() => setActiveDestination(null)}
+      />
 
       {/* Traveler count badge */}
       {travelers.length > 0 && (
