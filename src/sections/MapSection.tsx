@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import mapboxgl from 'mapbox-gl'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useDestinations, useTravelers } from '../hooks/useSupabase'
 import DestinationPanel from '../components/DestinationPanel'
 import type { Destination, Traveler } from '../types'
@@ -245,9 +245,17 @@ export default function MapSection() {
   const destMarkersRef = useRef<mapboxgl.Marker[]>([])
 
   const [activeGroup, setActiveGroup] = useState<Destination[] | null>(null)
+  const [interactive, setInteractive] = useState(false)
+  const destElsRef = useRef<HTMLElement[]>([])
 
   const { data: destinations } = useDestinations()
   const { data: travelers } = useTravelers()
+
+  // Scale pins inversely with zoom so they stay visually consistent
+  function scalePins(zoom: number) {
+    const s = Math.min(1, Math.max(0.55, (zoom - 2.5) / 3.5 * 0.45 + 0.55))
+    destElsRef.current.forEach((el) => { el.style.transform = `scale(${s})` })
+  }
 
   useEffect(() => {
     if (!TOKEN || !containerRef.current || mapRef.current) return
@@ -260,12 +268,17 @@ export default function MapSection() {
       zoom: 3.2,
       minZoom: 2.5,
       maxZoom: 14,
-      maxBounds: [[-175, 12], [-50, 85]], // USA, Canada, Mexico only
+      maxBounds: [[-175, 12], [-50, 85]],
       projection: 'mercator',
       attributionControl: false,
+      scrollZoom: false,
+      dragPan: false,
+      dragRotate: false,
+      touchZoomRotate: false,
     })
 
     map.on('error', (e) => console.error('Mapbox:', e.error?.message))
+    map.on('zoom', () => scalePins(map.getZoom()))
     setTimeout(() => map.resize(), 100)
     map.addControl(new mapboxgl.AttributionControl({ compact: true }))
     map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'bottom-right')
@@ -277,9 +290,32 @@ export default function MapSection() {
       destMarkersRef.current.forEach((m) => m.remove())
       markersRef.current = []
       destMarkersRef.current = []
+      destElsRef.current = []
       map.remove()
       mapRef.current = null
     }
+  }, [])
+
+  // Toggle map interactivity
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    if (interactive) {
+      map.scrollZoom.enable()
+      map.dragPan.enable()
+      map.touchZoomRotate.enable()
+    } else {
+      map.scrollZoom.disable()
+      map.dragPan.disable()
+      map.touchZoomRotate.disable()
+    }
+  }, [interactive])
+
+  // Exit interactive mode on Escape
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setInteractive(false) }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
   }, [])
 
   // Destinations + route
@@ -314,6 +350,7 @@ export default function MapSection() {
       // Clear any previous destination markers before re-adding
       destMarkersRef.current.forEach((m) => m.remove())
       destMarkersRef.current = []
+      destElsRef.current = []
 
       // One marker per city group
       groups.forEach((group) => {
@@ -323,7 +360,11 @@ export default function MapSection() {
           .setLngLat([group[0].lng, group[0].lat])
           .addTo(map)
         destMarkersRef.current.push(marker)
+        destElsRef.current.push(el)
       })
+
+      // Apply initial scale for current zoom
+      scalePins(map.getZoom())
 
       // Fit bounds
       const allCoords = groups.map((g) => [g[0].lng, g[0].lat] as [number, number])
@@ -379,11 +420,77 @@ export default function MapSection() {
       <div ref={containerRef} style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} />
 
       {/* Vignette */}
-      <div className="absolute inset-0 pointer-events-none" style={{
-        background:
-          'linear-gradient(to bottom, rgba(8,8,8,0.55) 0%, transparent 18%, transparent 80%, rgba(8,8,8,0.4) 100%),' +
-          'linear-gradient(to right, rgba(8,8,8,0.3) 0%, transparent 15%, transparent 85%, rgba(8,8,8,0.3) 100%)',
-      }} />
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            'linear-gradient(to bottom, rgba(8,8,8,0.55) 0%, transparent 18%, transparent 75%, rgba(8,8,8,0.5) 100%),' +
+            'linear-gradient(to right, rgba(8,8,8,0.3) 0%, transparent 15%, transparent 85%, rgba(8,8,8,0.3) 100%)',
+        }}
+      />
+
+      {/* Click-to-explore overlay — only when not interactive */}
+      <AnimatePresence>
+        {!interactive && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.25 }}
+            className="absolute inset-0 flex items-end justify-center pb-12 cursor-pointer"
+            onClick={() => setInteractive(true)}
+          >
+            {/* Bottom gradient prompt */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none"
+              style={{ background: 'linear-gradient(to top, rgba(8,8,8,0.6) 0%, transparent 100%)' }}
+            />
+            <motion.button
+              onClick={() => setInteractive(true)}
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.97 }}
+              className="relative z-10 flex items-center gap-2.5 px-5 py-2.5 rounded-full text-xs font-medium tracking-wider"
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                backdropFilter: 'blur(12px)',
+                color: 'rgba(255,255,255,0.75)',
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2"/>
+                <circle cx="6" cy="6" r="2" fill="currentColor"/>
+              </svg>
+              Explore map
+            </motion.button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Exit interactive mode button */}
+      <AnimatePresence>
+        {interactive && (
+          <motion.button
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -6 }}
+            transition={{ duration: 0.2 }}
+            onClick={() => setInteractive(false)}
+            className="absolute top-20 right-8 z-20 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium tracking-wider"
+            style={{
+              background: 'rgba(8,8,8,0.85)',
+              border: '1px solid rgba(255,255,255,0.12)',
+              backdropFilter: 'blur(12px)',
+              color: 'rgba(255,255,255,0.6)',
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+            Exit map · Esc
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       {/* Section label */}
       <motion.div
@@ -401,20 +508,17 @@ export default function MapSection() {
         <motion.div
           initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.5 }}
-          className="absolute bottom-10 left-8 flex items-center gap-3"
+          className="absolute bottom-10 left-8 flex items-center gap-3 pointer-events-none"
         >
           <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#00cc44' }} />
           <span className="text-[11px] tracking-[0.2em] uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            {travelers.length} travelers · {groupByCity(destinations).length} cities
+            {travelers.length} travelers · {groupByCity(destinations).length} {groupByCity(destinations).length === 1 ? 'city' : 'cities'}
           </span>
         </motion.div>
       )}
 
       {/* Destination panel */}
-      <DestinationPanel
-        destinations={activeGroup}
-        onClose={() => setActiveGroup(null)}
-      />
+      <DestinationPanel destinations={activeGroup} onClose={() => setActiveGroup(null)} />
     </div>
   )
 }
