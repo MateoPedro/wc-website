@@ -44,16 +44,17 @@ function makeDestinationEl(group: Destination[], token: string): HTMLElement {
     flex-direction: column;
     align-items: center;
     cursor: pointer;
-    filter: drop-shadow(0 4px 20px rgba(0,0,0,0.7));
-    transition: transform 0.18s ease;
+    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.8));
+    transition: filter 0.18s ease;
+    will-change: transform;
   `
-  wrap.onmouseenter = () => (wrap.style.transform = 'scale(1.05) translateY(-2px)')
-  wrap.onmouseleave = () => (wrap.style.transform = 'scale(1) translateY(0)')
+  wrap.onmouseenter = () => (wrap.style.filter = 'drop-shadow(0 6px 20px rgba(0,204,68,0.3))')
+  wrap.onmouseleave = () => (wrap.style.filter = 'drop-shadow(0 4px 16px rgba(0,0,0,0.8))')
 
   const card = document.createElement('div')
   card.style.cssText = `
-    width: 160px;
-    border-radius: 12px;
+    width: 130px;
+    border-radius: 10px;
     overflow: hidden;
     border: 1.5px solid rgba(0,204,68,0.35);
     background: #0a0a0a;
@@ -61,29 +62,27 @@ function makeDestinationEl(group: Destination[], token: string): HTMLElement {
 
   // Stadium satellite image
   const imgWrap = document.createElement('div')
-  imgWrap.style.cssText = 'position:relative;width:160px;height:90px;overflow:hidden;'
+  imgWrap.style.cssText = 'position:relative;width:130px;height:75px;overflow:hidden;'
 
   const img = document.createElement('img')
   img.src = imgUrl
   img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block;'
   img.onerror = () => { imgWrap.style.background = '#0d1a0d' }
 
-  // Gradient overlay on image
   const imgOverlay = document.createElement('div')
   imgOverlay.style.cssText = `
     position:absolute;inset:0;
-    background: linear-gradient(to bottom, transparent 40%, rgba(0,0,0,0.7) 100%);
+    background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.65) 100%);
   `
 
-  // Match count badge (top right, only if >1)
   if (matchCount > 1) {
     const badge = document.createElement('div')
     badge.style.cssText = `
-      position:absolute;top:7px;right:7px;
-      background:rgba(0,0,0,0.75);
+      position:absolute;top:6px;right:6px;
+      background:rgba(0,0,0,0.8);
       border:1px solid rgba(0,204,68,0.5);
-      border-radius:20px;padding:2px 8px;
-      font-size:10px;font-weight:600;color:#00cc44;
+      border-radius:20px;padding:1px 7px;
+      font-size:9px;font-weight:600;color:#00cc44;
       font-family:Inter,sans-serif;
     `
     badge.textContent = `${matchCount} matches`
@@ -243,6 +242,7 @@ export default function MapSection() {
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const rafRef = useRef<number>(0)
   const markersRef = useRef<mapboxgl.Marker[]>([])
+  const destMarkersRef = useRef<mapboxgl.Marker[]>([])
 
   const [activeGroup, setActiveGroup] = useState<Destination[] | null>(null)
 
@@ -257,7 +257,10 @@ export default function MapSection() {
       container: containerRef.current,
       style: 'mapbox://styles/mapbox/dark-v11',
       center: [-95, 42],
-      zoom: 3.0,
+      zoom: 3.2,
+      minZoom: 2.5,
+      maxZoom: 14,
+      maxBounds: [[-175, 12], [-50, 85]], // USA, Canada, Mexico only
       projection: 'mercator',
       attributionControl: false,
     })
@@ -271,7 +274,9 @@ export default function MapSection() {
     return () => {
       cancelAnimationFrame(rafRef.current)
       markersRef.current.forEach((m) => m.remove())
+      destMarkersRef.current.forEach((m) => m.remove())
       markersRef.current = []
+      destMarkersRef.current = []
       map.remove()
       mapRef.current = null
     }
@@ -306,14 +311,18 @@ export default function MapSection() {
         rafRef.current = startRouteAnimation(map)
       }
 
+      // Clear any previous destination markers before re-adding
+      destMarkersRef.current.forEach((m) => m.remove())
+      destMarkersRef.current = []
+
       // One marker per city group
       groups.forEach((group) => {
         const el = makeDestinationEl(group, TOKEN)
         el.addEventListener('click', () => setActiveGroup(group))
-        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom', rotationAlignment: 'viewport' })
           .setLngLat([group[0].lng, group[0].lat])
           .addTo(map)
-        markersRef.current.push(marker)
+        destMarkersRef.current.push(marker)
       })
 
       // Fit bounds
