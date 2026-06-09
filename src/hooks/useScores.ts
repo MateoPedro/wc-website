@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react'
 import { fetchScores, type ScoresData } from '../lib/footballData'
 
+const ONE_DAY = 24 * 60 * 60 * 1000
+
 export function useScores() {
   const [data, setData] = useState<ScoresData | null>(null)
   const [loading, setLoading] = useState(true)
@@ -12,7 +14,7 @@ export function useScores() {
     async function load() {
       try {
         const result = await fetchScores()
-        if (!cancelled) setData(result)
+        if (!cancelled) { setData(result); setError(null) }
       } catch (e: unknown) {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Failed to load scores')
       } finally {
@@ -21,9 +23,7 @@ export function useScores() {
     }
 
     load()
-    // Refresh every 5 minutes
-    const interval = setInterval(load, 5 * 60 * 1000)
-
+    const interval = setInterval(load, ONE_DAY)
     return () => { cancelled = true; clearInterval(interval) }
   }, [])
 

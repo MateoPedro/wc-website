@@ -21,7 +21,7 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     const groups: { stage: string; table: unknown[] }[] = standingsData.standings ?? []
     const groupK = groups.find((g) => g.stage === 'GROUP_STAGE')?.table ?? []
 
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate')
+    res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate')
     res.json({ matches: matchesData.matches ?? [], standings: groupK })
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'unknown error'
