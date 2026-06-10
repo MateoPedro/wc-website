@@ -49,6 +49,26 @@ export function getPhotoUrl(storagePath: string): string {
   return data.publicUrl
 }
 
+// ── Leaderboard ────────────────────────────────────────────
+
+export interface LeaderboardEntry {
+  id: string
+  name: string
+  points: number
+  correct_predictions: number
+  updated_at: string
+}
+
+export async function getLeaderboard(): Promise<LeaderboardEntry[]> {
+  const { data, error } = await supabase
+    .from('leaderboard')
+    .select('*')
+    .order('points', { ascending: false })
+
+  if (error) throw error
+  return data
+}
+
 // ── Site config ────────────────────────────────────────────
 
 export async function getSiteConfig(): Promise<SiteConfig> {

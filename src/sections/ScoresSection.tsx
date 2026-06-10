@@ -198,7 +198,7 @@ export default function ScoresSection() {
               style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 300 }}
             >
               Portugal Group K results, live scores, and standings.
-              Refreshes every 5 minutes.
+              Updated daily.
             </motion.p>
 
             {/* Group standings */}

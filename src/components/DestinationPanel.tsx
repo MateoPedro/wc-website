@@ -1,8 +1,14 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { getPhotosByDestination, getPhotoUrl } from '../lib/supabase'
+import { getPhotosByDestination, getPhotoUrl, getTravelers } from '../lib/supabase'
 import Lightbox from './Lightbox'
-import type { Destination, Photo } from '../types'
+import type { Destination, Photo, Traveler } from '../types'
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+
+function avatarUrl(path: string) {
+  return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`
+}
 
 interface Props {
   destinations: Destination[] | null
@@ -25,6 +31,9 @@ export default function DestinationPanel({ destinations, onClose }: Props) {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [loadingPhotos, setLoadingPhotos] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+  const [allTravelers, setAllTravelers] = useState<Traveler[]>([])
+
+  useEffect(() => { getTravelers().then(setAllTravelers).catch(() => {}) }, [])
 
   const active = destinations?.[activeIndex] ?? null
   const matchInfo = active?.match_info as Record<string, unknown> | null
@@ -181,6 +190,37 @@ export default function DestinationPanel({ destinations, onClose }: Props) {
                   </motion.div>
                 </AnimatePresence>
               )}
+
+              {/* Who's joining */}
+              {active && (() => {
+                const attendeeNames: string[] = (active.match_info as Record<string, unknown> | null)?.attendees as string[] ?? []
+                const attendees = allTravelers.filter((t) => !t.is_owner && attendeeNames.includes(t.name))
+                if (attendees.length === 0) return null
+                return (
+                  <div className="shrink-0 px-7 pt-5">
+                    <div className="text-[10px] tracking-[0.3em] uppercase mb-3" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                      Who's there
+                    </div>
+                    <div className="flex flex-col gap-3">
+                      {attendees.map((t) => (
+                        <div key={t.id} className="flex items-center gap-3">
+                          <div style={{ width: 36, height: 36, borderRadius: '50%', flexShrink: 0, overflow: 'hidden', background: '#1a1a1a', border: '1.5px solid rgba(255,255,255,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {t.avatar_url
+                              ? <img src={avatarUrl(t.avatar_url)} alt={t.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              : <span style={{ fontSize: 11, fontWeight: 600, color: '#fff', fontFamily: 'Inter, sans-serif' }}>{t.name.slice(0, 2).toUpperCase()}</span>
+                            }
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-semibold text-white">{t.name}</div>
+                            {t.note && <div className="text-[11px] leading-snug mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.4)' }}>{t.note}</div>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-5 h-px" style={{ background: 'rgba(255,255,255,0.06)' }} />
+                  </div>
+                )
+              })()}
 
               {/* Photos */}
               <div className="flex-1 overflow-y-auto px-7 py-5">

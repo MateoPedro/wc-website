@@ -3,12 +3,13 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { scrollTo } from '../lib/lenis'
 import { useActiveSection } from '../hooks/useActiveSection'
 
-const SECTIONS = ['hero', 'map', 'scores', 'playlist']
+const SECTIONS = ['hero', 'map', 'scores', 'playlist', 'predictor']
 
 const allLinks = [
   { id: 'map', label: 'Map' },
   { id: 'scores', label: 'Scores' },
   { id: 'playlist', label: 'Playlist' },
+  { id: 'predictor', label: 'Predictor' },
 ]
 
 export default function Navbar({ showScores = true }: { showScores?: boolean }) {

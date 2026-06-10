@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { getTravelers, getDestinations, getSiteConfig } from '../lib/supabase'
+import { getTravelers, getDestinations, getSiteConfig, getLeaderboard } from '../lib/supabase'
 import type { Traveler, Destination, SiteConfig } from '../types'
+import type { LeaderboardEntry } from '../lib/supabase'
 
 function useQuery<T>(fetcher: () => Promise<T>, fallback: T) {
   const [data, setData] = useState<T>(fallback)
@@ -27,4 +28,8 @@ export function useDestinations() {
 
 export function useSiteConfig() {
   return useQuery<SiteConfig | null>(getSiteConfig, null)
+}
+
+export function useLeaderboard() {
+  return useQuery<LeaderboardEntry[]>(getLeaderboard, [])
 }

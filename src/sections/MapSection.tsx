@@ -18,49 +18,25 @@ function groupByCity(destinations: Destination[]): Destination[][] {
   return Array.from(map.values())
 }
 
-// ── Satellite image pin ────────────────────────────────────
+// ── Destination card ───────────────────────────────────────
 
 function makeDestinationEl(group: Destination[], token: string): HTMLElement {
   const primary = group[0]
   const matchCount = group.length
   const matchInfo = group[0].match_info as Record<string, unknown> | null
-
-  // Mapbox satellite static image of the stadium
-  const zoom = 14
-  const imgUrl =
-    `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/` +
-    `${primary.lng},${primary.lat},${zoom},0/280x160@2x?access_token=${token}`
-
-  // Opponent label (first match)
+  const imgUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${primary.lng},${primary.lat},14,0/280x160@2x?access_token=${token}`
   const opponent = matchInfo ? String(matchInfo.opponent ?? '') : ''
   const venue = matchInfo ? String(matchInfo.venue ?? '') : ''
-
-  // Dates across all matches
   const dates = group.map((d) => d.date_range).filter(Boolean).join(' · ')
 
   const wrap = document.createElement('div')
-  wrap.style.cssText = `
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    cursor: pointer;
-    filter: drop-shadow(0 4px 16px rgba(0,0,0,0.8));
-    transition: filter 0.18s ease;
-    will-change: transform;
-  `
+  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.8));transition:filter 0.18s ease;will-change:transform;'
   wrap.onmouseenter = () => (wrap.style.filter = 'drop-shadow(0 6px 20px rgba(0,204,68,0.3))')
   wrap.onmouseleave = () => (wrap.style.filter = 'drop-shadow(0 4px 16px rgba(0,0,0,0.8))')
 
   const card = document.createElement('div')
-  card.style.cssText = `
-    width: 130px;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 1.5px solid rgba(0,204,68,0.35);
-    background: #0a0a0a;
-  `
+  card.style.cssText = 'width:130px;border-radius:10px;overflow:hidden;border:1.5px solid rgba(0,204,68,0.35);background:#0a0a0a;'
 
-  // Stadium satellite image
   const imgWrap = document.createElement('div')
   imgWrap.style.cssText = 'position:relative;width:130px;height:75px;overflow:hidden;'
 
@@ -70,21 +46,11 @@ function makeDestinationEl(group: Destination[], token: string): HTMLElement {
   img.onerror = () => { imgWrap.style.background = '#0d1a0d' }
 
   const imgOverlay = document.createElement('div')
-  imgOverlay.style.cssText = `
-    position:absolute;inset:0;
-    background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.65) 100%);
-  `
+  imgOverlay.style.cssText = 'position:absolute;inset:0;background:linear-gradient(to bottom,transparent 30%,rgba(0,0,0,0.65) 100%);'
 
   if (matchCount > 1) {
     const badge = document.createElement('div')
-    badge.style.cssText = `
-      position:absolute;top:6px;right:6px;
-      background:rgba(0,0,0,0.8);
-      border:1px solid rgba(0,204,68,0.5);
-      border-radius:20px;padding:1px 7px;
-      font-size:9px;font-weight:600;color:#00cc44;
-      font-family:Inter,sans-serif;
-    `
+    badge.style.cssText = 'position:absolute;top:6px;right:6px;background:rgba(0,0,0,0.8);border:1px solid rgba(0,204,68,0.5);border-radius:20px;padding:1px 7px;font-size:9px;font-weight:600;color:#00cc44;font-family:Inter,sans-serif;'
     badge.textContent = `${matchCount} matches`
     imgWrap.appendChild(badge)
   }
@@ -92,38 +58,19 @@ function makeDestinationEl(group: Destination[], token: string): HTMLElement {
   imgWrap.appendChild(img)
   imgWrap.appendChild(imgOverlay)
 
-  // Info panel
   const info = document.createElement('div')
-  info.style.cssText = `
-    padding: 9px 11px 10px;
-    background: rgba(8,8,8,0.97);
-  `
+  info.style.cssText = 'padding:9px 11px 10px;background:rgba(8,8,8,0.97);'
 
   const cityEl = document.createElement('div')
-  cityEl.style.cssText = `
-    font-size: 13px; font-weight: 700; color: #fff;
-    font-family: Inter, sans-serif; letter-spacing: 0.01em;
-    line-height: 1.2;
-  `
+  cityEl.style.cssText = 'font-size:13px;font-weight:700;color:#fff;font-family:Inter,sans-serif;letter-spacing:0.01em;line-height:1.2;'
   cityEl.textContent = primary.city
 
   const detailEl = document.createElement('div')
-  detailEl.style.cssText = `
-    font-size: 10px; color: rgba(255,255,255,0.4);
-    font-family: Inter, sans-serif; margin-top: 3px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  `
-  detailEl.textContent = matchCount === 1
-    ? `vs ${opponent} · ${dates}`
-    : `${dates}`
+  detailEl.style.cssText = 'font-size:10px;color:rgba(255,255,255,0.4);font-family:Inter,sans-serif;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
+  detailEl.textContent = matchCount === 1 ? `vs ${opponent} · ${dates}` : dates
 
   const venueEl = document.createElement('div')
-  venueEl.style.cssText = `
-    font-size: 9px; color: rgba(0,204,68,0.6);
-    font-family: Inter, sans-serif; margin-top: 2px;
-    letter-spacing: 0.03em;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  `
+  venueEl.style.cssText = 'font-size:9px;color:rgba(0,204,68,0.6);font-family:Inter,sans-serif;margin-top:2px;letter-spacing:0.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
   venueEl.textContent = venue
 
   info.appendChild(cityEl)
@@ -133,67 +80,44 @@ function makeDestinationEl(group: Destination[], token: string): HTMLElement {
   card.appendChild(imgWrap)
   card.appendChild(info)
 
-  // Arrow pointer
   const arrow = document.createElement('div')
-  arrow.style.cssText = `
-    width: 0; height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-top: 10px solid rgba(8,8,8,0.97);
-    margin-top: -1px;
-  `
+  arrow.style.cssText = 'width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:10px solid rgba(8,8,8,0.97);margin-top:-1px;'
 
   wrap.appendChild(card)
   wrap.appendChild(arrow)
   return wrap
 }
 
-// ── Traveler marker ────────────────────────────────────────
+// ── Owner pin ──────────────────────────────────────────────
 
-function initials(name: string): string {
-  return name.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2)
-}
-
-function makeInitialsEl(name: string, gold: boolean): HTMLDivElement {
-  const el = document.createElement('div')
-  el.style.cssText = `font-size:13px;font-weight:600;color:${gold ? '#C8A200' : '#fff'};font-family:Inter,sans-serif;`
-  el.textContent = initials(name)
-  return el
-}
-
-function makeTravelerEl(t: Traveler): HTMLElement {
+function makeOwnerEl(t: Traveler): HTMLElement {
   const wrap = document.createElement('div')
   wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:5px;cursor:pointer;'
 
-  const gold = t.is_owner
   const ring = document.createElement('div')
-  ring.style.cssText = `
-    width:46px;height:46px;border-radius:50%;
-    border:2.5px solid ${gold ? '#C8A200' : 'rgba(255,255,255,0.75)'};
-    background:#111;overflow:hidden;
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 0 ${gold ? '14px rgba(200,162,0,0.45)' : '10px rgba(0,0,0,0.7)'};
-    transition:transform 0.15s ease;
-  `
-  ring.onmouseenter = () => (ring.style.transform = 'scale(1.12)')
-  ring.onmouseleave = () => (ring.style.transform = 'scale(1)')
+  ring.style.cssText = 'width:46px;height:46px;border-radius:50%;border:2.5px solid #C8A200;background:#111;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 14px rgba(200,162,0,0.45);transition:transform 0.15s ease;'
+  ring.onmouseenter = () => { ring.style.transform = 'scale(1.12)' }
+  ring.onmouseleave = () => { ring.style.transform = 'scale(1)' }
 
   if (t.avatar_url) {
     const img = document.createElement('img')
-    img.src = t.avatar_url
+    img.src = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/avatars/${t.avatar_url}`
     img.style.cssText = 'width:100%;height:100%;object-fit:cover;'
-    img.onerror = () => img.replaceWith(makeInitialsEl(t.name, gold))
+    img.onerror = () => { img.style.display = 'none'; ring.appendChild(initEl()) }
     ring.appendChild(img)
   } else {
-    ring.appendChild(makeInitialsEl(t.name, gold))
+    ring.appendChild(initEl())
+  }
+
+  function initEl() {
+    const el = document.createElement('div')
+    el.style.cssText = 'font-size:13px;font-weight:600;color:#C8A200;font-family:Inter,sans-serif;'
+    el.textContent = t.name.slice(0, 2).toUpperCase()
+    return el
   }
 
   const label = document.createElement('div')
-  label.style.cssText = `
-    font-size:10px;font-weight:500;color:rgba(255,255,255,0.9);
-    font-family:Inter,sans-serif;letter-spacing:0.04em;
-    text-shadow:0 1px 6px rgba(0,0,0,0.9);white-space:nowrap;
-  `
+  label.style.cssText = 'font-size:10px;font-weight:500;color:rgba(255,255,255,0.9);font-family:Inter,sans-serif;letter-spacing:0.04em;text-shadow:0 1px 6px rgba(0,0,0,0.9);white-space:nowrap;'
   label.textContent = t.name
 
   wrap.appendChild(ring)
@@ -201,16 +125,7 @@ function makeTravelerEl(t: Traveler): HTMLElement {
   return wrap
 }
 
-function travelerPopupHTML(t: Traveler): string {
-  return `
-    <div style="font-family:Inter,sans-serif;min-width:150px;">
-      <div style="font-size:14px;font-weight:600;color:#fff;margin-bottom:3px;">${t.name}</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-bottom:8px;">📍 ${t.current_city}</div>
-      ${t.note ? `<div style="font-size:12px;color:rgba(255,255,255,0.65);line-height:1.5;">${t.note}</div>` : ''}
-    </div>`
-}
-
-// ── Animated dashed route ──────────────────────────────────
+// ── Animated route ─────────────────────────────────────────
 
 const DASH_SEQUENCES: number[][] = [
   [0, 2, 4], [0.5, 2, 3.5], [1, 2, 3], [1.5, 2, 2.5],
@@ -241,22 +156,22 @@ export default function MapSection() {
   const containerRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const rafRef = useRef<number>(0)
-  const markersRef = useRef<mapboxgl.Marker[]>([])
+  const ownerMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const destMarkersRef = useRef<mapboxgl.Marker[]>([])
+  const destElsRef = useRef<HTMLElement[]>([])
 
   const [activeGroup, setActiveGroup] = useState<Destination[] | null>(null)
   const [interactive, setInteractive] = useState(false)
-  const destElsRef = useRef<HTMLElement[]>([])
 
   const { data: destinations } = useDestinations()
   const { data: travelers } = useTravelers()
 
-  // Scale pins inversely with zoom so they stay visually consistent
   function scalePins(zoom: number) {
     const s = Math.min(1, Math.max(0.55, (zoom - 2.5) / 3.5 * 0.45 + 0.55))
     destElsRef.current.forEach((el) => { el.style.transform = `scale(${s})` })
   }
 
+  // Map init
   useEffect(() => {
     if (!TOKEN || !containerRef.current || mapRef.current) return
 
@@ -286,9 +201,9 @@ export default function MapSection() {
 
     return () => {
       cancelAnimationFrame(rafRef.current)
-      markersRef.current.forEach((m) => m.remove())
+      ownerMarkerRef.current?.remove()
       destMarkersRef.current.forEach((m) => m.remove())
-      markersRef.current = []
+      ownerMarkerRef.current = null
       destMarkersRef.current = []
       destElsRef.current = []
       map.remove()
@@ -296,22 +211,18 @@ export default function MapSection() {
     }
   }, [])
 
-  // Toggle map interactivity
+  // Toggle interactivity
   useEffect(() => {
     const map = mapRef.current
     if (!map) return
     if (interactive) {
-      map.scrollZoom.enable()
-      map.dragPan.enable()
-      map.touchZoomRotate.enable()
+      map.scrollZoom.enable(); map.dragPan.enable(); map.touchZoomRotate.enable()
     } else {
-      map.scrollZoom.disable()
-      map.dragPan.disable()
-      map.touchZoomRotate.disable()
+      map.scrollZoom.disable(); map.dragPan.disable(); map.touchZoomRotate.disable()
     }
   }, [interactive])
 
-  // Exit interactive mode on Escape
+  // ESC to exit
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setInteractive(false) }
     window.addEventListener('keydown', onKey)
@@ -325,8 +236,6 @@ export default function MapSection() {
 
     const apply = () => {
       const groups = groupByCity(destinations)
-
-      // Route uses one coordinate per unique city
       const routeCoords = groups.map((g) => [g[0].lng, g[0].lat] as [number, number])
 
       if (!map.getSource('route')) {
@@ -334,25 +243,15 @@ export default function MapSection() {
           type: 'geojson',
           data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: routeCoords } },
         })
-        map.addLayer({
-          id: 'route-base', type: 'line', source: 'route',
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: { 'line-color': '#00cc44', 'line-width': 1.5, 'line-opacity': 0.25 },
-        })
-        map.addLayer({
-          id: 'route-animated', type: 'line', source: 'route',
-          layout: { 'line-join': 'round', 'line-cap': 'round' },
-          paint: { 'line-color': '#00cc44', 'line-width': 2.5, 'line-opacity': 0.85, 'line-dasharray': [0, 2, 4] },
-        })
+        map.addLayer({ id: 'route-base', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#00cc44', 'line-width': 1.5, 'line-opacity': 0.25 } })
+        map.addLayer({ id: 'route-animated', type: 'line', source: 'route', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#00cc44', 'line-width': 2.5, 'line-opacity': 0.85, 'line-dasharray': [0, 2, 4] } })
         rafRef.current = startRouteAnimation(map)
       }
 
-      // Clear any previous destination markers before re-adding
       destMarkersRef.current.forEach((m) => m.remove())
       destMarkersRef.current = []
       destElsRef.current = []
 
-      // One marker per city group
       groups.forEach((group) => {
         const el = makeDestinationEl(group, TOKEN)
         el.addEventListener('click', () => setActiveGroup(group))
@@ -363,16 +262,11 @@ export default function MapSection() {
         destElsRef.current.push(el)
       })
 
-      // Apply initial scale for current zoom
       scalePins(map.getZoom())
 
-      // Fit bounds
       const allCoords = groups.map((g) => [g[0].lng, g[0].lat] as [number, number])
       if (allCoords.length > 1) {
-        const bounds = allCoords.reduce(
-          (b, c) => b.extend(c),
-          new mapboxgl.LngLatBounds(allCoords[0], allCoords[0]),
-        )
+        const bounds = allCoords.reduce((b, c) => b.extend(c), new mapboxgl.LngLatBounds(allCoords[0], allCoords[0]))
         map.fitBounds(bounds, { padding: 180, maxZoom: 7, duration: 2200, essential: true })
       }
     }
@@ -381,22 +275,26 @@ export default function MapSection() {
     else map.once('load', apply)
   }, [destinations])
 
-  // Traveler markers
+  // Owner pin only
   useEffect(() => {
     const map = mapRef.current
     if (!map || travelers.length === 0) return
 
     const apply = () => {
-      travelers.forEach((t) => {
-        const el = makeTravelerEl(t)
-        const popup = new mapboxgl.Popup({ closeButton: false, className: 'map-popup', offset: 30 })
-          .setHTML(travelerPopupHTML(t))
-        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-          .setLngLat([t.lng, t.lat])
-          .setPopup(popup)
-          .addTo(map)
-        markersRef.current.push(marker)
-      })
+      ownerMarkerRef.current?.remove()
+      ownerMarkerRef.current = null
+
+      const owner = travelers.find((t) => t.is_owner)
+      if (!owner) return
+
+      const el = makeOwnerEl(owner)
+      const popup = new mapboxgl.Popup({ closeButton: false, className: 'map-popup', offset: 30 })
+        .setHTML(`<div style="font-family:Inter,sans-serif;min-width:140px;"><div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;">${owner.name}</div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:${owner.note ? '5px' : '0'};">📍 ${owner.current_city}</div>${owner.note ? `<div style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">${owner.note}</div>` : ''}</div>`)
+
+      ownerMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat([owner.lng, owner.lat])
+        .setPopup(popup)
+        .addTo(map)
     }
 
     if (map.isStyleLoaded()) apply()
@@ -407,9 +305,7 @@ export default function MapSection() {
     return (
       <div style={{ position: 'relative', width: '100%', height: '100vh', background: '#070d07' }}>
         <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>
-            Add <code style={{ color: '#00cc44' }}>VITE_MAPBOX_TOKEN</code> to .env.local
-          </p>
+          <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: 13 }}>Add <code style={{ color: '#00cc44' }}>VITE_MAPBOX_TOKEN</code> to .env.local</p>
         </div>
       </div>
     )
@@ -429,33 +325,20 @@ export default function MapSection() {
         }}
       />
 
-      {/* Click-to-explore overlay — only when not interactive */}
+      {/* Explore overlay */}
       <AnimatePresence>
         {!interactive && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.25 }}
             className="absolute inset-0 flex items-end justify-center pb-12 cursor-pointer"
             onClick={() => setInteractive(true)}
           >
-            {/* Bottom gradient prompt */}
-            <div
-              className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none"
-              style={{ background: 'linear-gradient(to top, rgba(8,8,8,0.6) 0%, transparent 100%)' }}
-            />
+            <div className="absolute bottom-0 left-0 right-0 h-40 pointer-events-none" style={{ background: 'linear-gradient(to top, rgba(8,8,8,0.6) 0%, transparent 100%)' }} />
             <motion.button
               onClick={() => setInteractive(true)}
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.97 }}
+              whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }}
               className="relative z-10 flex items-center gap-2.5 px-5 py-2.5 rounded-full text-xs font-medium tracking-wider"
-              style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255,255,255,0.15)',
-                backdropFilter: 'blur(12px)',
-                color: 'rgba(255,255,255,0.75)',
-              }}
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(12px)', color: 'rgba(255,255,255,0.75)' }}
             >
               <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
                 <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2"/>
@@ -467,22 +350,14 @@ export default function MapSection() {
         )}
       </AnimatePresence>
 
-      {/* Exit interactive mode button */}
+      {/* Exit button */}
       <AnimatePresence>
         {interactive && (
           <motion.button
-            initial={{ opacity: 0, y: -6 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.2 }}
+            initial={{ opacity: 0, y: -6 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -6 }} transition={{ duration: 0.2 }}
             onClick={() => setInteractive(false)}
             className="absolute top-20 right-8 z-20 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-medium tracking-wider"
-            style={{
-              background: 'rgba(8,8,8,0.85)',
-              border: '1px solid rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(12px)',
-              color: 'rgba(255,255,255,0.6)',
-            }}
+            style={{ background: 'rgba(8,8,8,0.85)', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(12px)', color: 'rgba(255,255,255,0.6)' }}
           >
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
               <path d="M1 1l8 8M9 1L1 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
@@ -503,8 +378,8 @@ export default function MapSection() {
         <span className="text-[10px] tracking-[0.4em] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>The Journey</span>
       </motion.div>
 
-      {/* Traveler count */}
-      {travelers.length > 0 && (
+      {/* City count */}
+      {destinations.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
           transition={{ duration: 0.6, delay: 0.5 }}
@@ -512,12 +387,11 @@ export default function MapSection() {
         >
           <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#00cc44' }} />
           <span className="text-[11px] tracking-[0.2em] uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            {travelers.length} travelers · {groupByCity(destinations).length} {groupByCity(destinations).length === 1 ? 'city' : 'cities'}
+            {groupByCity(destinations).length} {groupByCity(destinations).length === 1 ? 'city' : 'cities'} · {travelers.length} travelers
           </span>
         </motion.div>
       )}
 
-      {/* Destination panel */}
       <DestinationPanel destinations={activeGroup} onClose={() => setActiveGroup(null)} />
     </div>
   )

@@ -90,6 +90,24 @@ insert into public.destinations (city, lat, lng, description, date_range, "order
   ('Dallas',       32.7767, -96.7970, 'Quarter-final at AT&T Stadium',                'Jul 5–10',   5),
   ('Vancouver',    49.2827, -123.1207,'Semi-final at BC Place',                       'Jul 10–15',  6);
 
+-- ============================================================
+-- LEADERBOARD (wcpredictor.app group ranking)
+-- Run this block separately if adding after initial migration
+-- ============================================================
+
+create table if not exists public.leaderboard (
+  id                  uuid primary key default gen_random_uuid(),
+  name                text not null,
+  points              integer not null default 0,
+  correct_predictions integer not null default 0,
+  updated_at          timestamptz not null default now()
+);
+
+alter table public.leaderboard enable row level security;
+create policy "public read leaderboard" on public.leaderboard for select using (true);
+
+-- ============================================================
+
 -- Travelers (dummy data — swap out with real people later)
 insert into public.travelers (name, lat, lng, current_city, note, is_owner) values
   ('Mateo',    40.7128, -74.0060, 'New York',    'Living the dream 🇵🇹⚽', true),

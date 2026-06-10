@@ -2,10 +2,12 @@ import { useEffect } from 'react'
 import { createLenis } from './lib/lenis'
 import { useSiteConfig } from './hooks/useSupabase'
 import Navbar from './components/Navbar'
+import CustomCursor from './components/CustomCursor'
 import HeroSection from './sections/HeroSection'
 import MapSection from './sections/MapSection'
 import ScoresSection from './sections/ScoresSection'
 import PlaylistSection from './sections/PlaylistSection'
+import PredictorSection from './sections/PredictorSection'
 
 export default function App() {
   const { data: config } = useSiteConfig()
@@ -28,6 +30,7 @@ export default function App() {
 
   return (
     <div style={{ background: '#080808' }}>
+      <CustomCursor />
       <Navbar showScores={config?.show_scores ?? true} />
       <section id="hero">
         <HeroSection heroMessage={config?.hero_message} />
@@ -40,6 +43,9 @@ export default function App() {
       </section>
       <section id="playlist">
         <PlaylistSection spotifyUrl={config?.spotify_playlist_url} />
+      </section>
+      <section id="predictor">
+        <PredictorSection />
       </section>
     </div>
   )

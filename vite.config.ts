@@ -11,6 +11,17 @@ export default defineConfig(({ mode }) => {
     resolve: {
       alias: { '@': path.resolve(__dirname, './src') },
     },
+    appType: 'spa',
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            mapbox: ['mapbox-gl'],
+            supabase: ['@supabase/supabase-js'],
+          },
+        },
+      },
+    },
     server: {
       proxy: {
         '/api/scores': {
