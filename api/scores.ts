@@ -17,12 +17,14 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
       fd(`/competitions/WC/standings?season=2026`),
     ])
 
-    // Find Group K standing
-    const groups: { stage: string; table: unknown[] }[] = standingsData.standings ?? []
-    const groupK = groups.find((g) => g.stage === 'GROUP_STAGE')?.table ?? []
+    // Find the group stage table that contains Portugal
+    const groups: { stage: string; group?: string; table: { team: { id: number } }[] }[] = standingsData.standings ?? []
+    const portGroup = groups.find(
+      (g) => g.stage === 'GROUP_STAGE' && Array.isArray(g.table) && g.table.some((row) => row.team?.id === PORTUGAL_ID)
+    )?.table ?? []
 
     res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate')
-    res.json({ matches: matchesData.matches ?? [], standings: groupK })
+    res.json({ matches: matchesData.matches ?? [], standings: portGroup })
   } catch (e: unknown) {
     const message = e instanceof Error ? e.message : 'unknown error'
     res.status(500).json({ error: message })
