@@ -42,7 +42,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     // Filter to TOTAL only, then manually pick Portugal's Group K: POR, COD, UZB, COL.
     const GROUP_K_IDS = new Set([PORTUGAL_ID, 1934, 8070, 818]) // Portugal, Congo DR, Uzbekistan, Colombia
     const totalTable = groups.find((g) => g.type === 'TOTAL')?.table ?? []
-    const portGroup = totalTable.filter((row) => GROUP_K_IDS.has(row.team?.id))
+    const portGroup = totalTable
+      .filter((row) => GROUP_K_IDS.has(row.team?.id))
+      .map((row, i) => ({ ...row, position: i + 1 }))
 
     res.setHeader('Cache-Control', 'no-store')
     res.json({ matches: matchesData.matches ?? [], standings: portGroup })
