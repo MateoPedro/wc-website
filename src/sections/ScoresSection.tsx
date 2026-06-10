@@ -120,7 +120,7 @@ function StandingRow({ row, index }: { row: FDStandingRow; index: number }) {
         borderTop: index > 0 ? '1px solid rgba(255,255,255,0.04)' : undefined,
       }}
     >
-      <span className="w-6 text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>{row.position}</span>
+      <span className="w-6 text-[11px]" style={{ color: 'rgba(255,255,255,0.25)' }}>{index + 1}</span>
       <div className="flex items-center gap-2.5 flex-1">
         <img src={row.team.crest} alt={row.team.name} className="w-5 h-5 object-contain" />
         <span
