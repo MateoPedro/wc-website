@@ -5,8 +5,9 @@ import TravelerManager from './admin/TravelerManager'
 import PhotoManager from './admin/PhotoManager'
 import ConfigManager from './admin/ConfigManager'
 import LeaderboardManager from './admin/LeaderboardManager'
+import DestinationManager from './admin/DestinationManager'
 
-type Tab = 'travelers' | 'photos' | 'config' | 'leaderboard'
+type Tab = 'travelers' | 'destinations' | 'photos' | 'config' | 'leaderboard'
 
 export default function AdminApp() {
   const [authed, setAuthed] = useState<boolean | null>(null) // null = checking
@@ -28,6 +29,7 @@ export default function AdminApp() {
 
   const navItems: { id: Tab; label: string }[] = [
     { id: 'travelers', label: 'Travelers' },
+    { id: 'destinations', label: 'Destinations' },
     { id: 'photos', label: 'Photos' },
     { id: 'leaderboard', label: 'Leaderboard' },
     { id: 'config', label: 'Config' },
@@ -80,6 +82,7 @@ export default function AdminApp() {
       {/* Content */}
       <main style={{ flex: 1, padding: '40px 48px', overflowY: 'auto' }}>
         {tab === 'travelers' && <TravelerManager />}
+        {tab === 'destinations' && <DestinationManager />}
         {tab === 'photos' && <PhotoManager />}
         {tab === 'leaderboard' && <LeaderboardManager />}
         {tab === 'config' && <ConfigManager />}
