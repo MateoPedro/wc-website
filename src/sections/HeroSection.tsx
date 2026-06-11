@@ -113,7 +113,7 @@ export default function HeroSection({ heroMessage }: { heroMessage?: string }) {
           Tournament
         </div>
         <div className="text-sm font-light mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>
-          Jun 12 – Jul 19, 2026
+          Jun 11 – Jul 19, 2026
         </div>
       </motion.div>
 
