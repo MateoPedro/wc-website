@@ -1,4 +1,6 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import Cropper from 'react-easy-crop'
+import type { Area } from 'react-easy-crop'
 import { adminApi, uploadFile } from '../lib/adminApi'
 import type { Traveler } from '../types'
 
@@ -6,6 +8,19 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
 function avatarPublicUrl(path: string) {
   return `${SUPABASE_URL}/storage/v1/object/public/avatars/${path}`
+}
+
+async function getCroppedFile(imageSrc: string, pixelCrop: Area): Promise<File> {
+  const image = new Image()
+  image.src = imageSrc
+  await new Promise((res) => { image.onload = res })
+  const canvas = document.createElement('canvas')
+  const size = Math.max(pixelCrop.width, pixelCrop.height)
+  canvas.width = size
+  canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, size, size)
+  return new Promise((res) => canvas.toBlob((b) => res(new File([b!], 'avatar.jpg', { type: 'image/jpeg' })), 'image/jpeg', 0.92))
 }
 
 const EMPTY: Partial<Traveler> = { name: '', current_city: '', lat: 0, lng: 0, note: '', is_owner: false, avatar_url: '' }
@@ -18,6 +33,13 @@ export default function TravelerManager() {
   const [error, setError] = useState('')
   const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [avatarPreview, setAvatarPreview] = useState('')
+
+  // Crop state
+  const [cropSrc, setCropSrc] = useState('')
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+
   const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { load() }, [])
@@ -46,13 +68,28 @@ export default function TravelerManager() {
     setError('')
   }
 
-  function close() { setEditing(null); setAvatarFile(null); setAvatarPreview('') }
+  function close() { setEditing(null); setAvatarFile(null); setAvatarPreview(''); setCropSrc('') }
 
   function onAvatarChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    const url = URL.createObjectURL(file)
+    setCropSrc(url)
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+    e.target.value = ''
+  }
+
+  const onCropComplete = useCallback((_: Area, pixels: Area) => {
+    setCroppedAreaPixels(pixels)
+  }, [])
+
+  async function applyCrop() {
+    if (!croppedAreaPixels || !cropSrc) return
+    const file = await getCroppedFile(cropSrc, croppedAreaPixels)
     setAvatarFile(file)
     setAvatarPreview(URL.createObjectURL(file))
+    setCropSrc('')
   }
 
   async function save() {
@@ -63,9 +100,8 @@ export default function TravelerManager() {
       let avatarPath = editing.avatar_url ?? ''
 
       if (avatarFile) {
-        const ext = avatarFile.name.split('.').pop() ?? 'jpg'
         const id = editing.id ?? `new-${Date.now()}`
-        const path = `${id}.${ext}`
+        const path = `${id}.jpg`
         avatarPath = await uploadFile('avatars', path, avatarFile)
       }
 
@@ -143,6 +179,44 @@ export default function TravelerManager() {
           </div>
         ))}
       </div>
+
+      {/* Crop modal */}
+      {cropSrc && (
+        <div style={overlay} onClick={() => setCropSrc('')}>
+          <div style={{ ...modal, maxWidth: 440, padding: 24 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h3 style={{ ...headingStyle, fontSize: 18, margin: 0 }}>Crop Avatar</h3>
+              <button onClick={() => setCropSrc('')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 20 }}>×</button>
+            </div>
+            <div style={{ position: 'relative', width: '100%', height: 320, borderRadius: 10, overflow: 'hidden', background: '#000' }}>
+              <Cropper
+                image={cropSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <label style={{ ...labelStyle, marginBottom: 6 }}>Zoom</label>
+              <input
+                type="range" min={1} max={3} step={0.01}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                style={{ width: '100%', accentColor: '#00cc44' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <button onClick={applyCrop} style={{ ...greenBtn, flex: 1 }}>Apply Crop</button>
+              <button onClick={() => setCropSrc('')} style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Edit / Create modal */}
       {editing && (
