@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react'
-import { motion, useScroll, useTransform } from 'framer-motion'
+import { motion, useScroll, useTransform, useMotionValue, useSpring } from 'framer-motion'
+import type { MouseEvent } from 'react'
 import { scrollTo } from '../lib/lenis'
 
 const EASE: [number, number, number, number] = [0.16, 1, 0.3, 1]
@@ -29,16 +30,28 @@ export default function HeroSection({ heroMessage }: { heroMessage?: string }) {
   const textOpacity = useTransform(scrollYProgress, [0, 0.6], [1, 0])
   const imgY = useTransform(scrollYProgress, [0, 1], ['0%', '12%'])
 
+  // Mouse parallax (horizontal only — vertical is handled by scroll)
+  const rawMouseX = useMotionValue(0)
+  const mouseX = useSpring(rawMouseX, { stiffness: 60, damping: 20 })
+
+  function handleMouseMove(e: MouseEvent<HTMLDivElement>) {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / rect.width - 0.5
+    rawMouseX.set(x * 28)
+  }
+
   return (
     <div
       ref={ref}
       className="relative min-h-screen flex flex-col overflow-hidden"
       style={{ background: '#080808' }}
+      onMouseMove={handleMouseMove}
     >
-      {/* Full-bleed background image with parallax */}
+      {/* Full-bleed background image with scroll + mouse parallax */}
       <motion.div
-        style={{ y: imgY }}
+        style={{ y: imgY, x: mouseX }}
         className="absolute inset-0 w-full h-full"
+        // Slightly oversized so mouse parallax doesn't expose edges
       >
         <img
           src="/hero.jpg"

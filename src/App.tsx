@@ -3,6 +3,7 @@ import { createLenis } from './lib/lenis'
 import { useSiteConfig } from './hooks/useSupabase'
 import Navbar from './components/Navbar'
 import CustomCursor from './components/CustomCursor'
+import MarqueeStrip from './components/MarqueeStrip'
 import HeroSection from './sections/HeroSection'
 import MapSection from './sections/MapSection'
 import ScoresSection from './sections/ScoresSection'
@@ -35,6 +36,7 @@ export default function App() {
       <section id="hero">
         <HeroSection heroMessage={config?.hero_message} />
       </section>
+      <MarqueeStrip />
       <section id="map">
         <MapSection />
       </section>
