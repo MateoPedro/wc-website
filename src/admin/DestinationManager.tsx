@@ -13,12 +13,12 @@ function avatarUrl(path: string) {
 }
 
 const EMPTY_DEST: Partial<Destination> = {
-  city: '', lat: 0, lng: 0, description: '', date_range: '', order: 99, match_info: null,
+  city: '', lat: 0, lng: 0, description: '', date_range: '', order: 99, match_info: null, preview_image_url: null,
 }
 
 // ── Inline photo section per destination ──────────────────
 
-function DestPhotos({ dest }: { dest: Destination }) {
+function DestPhotos({ dest, collapsed }: { dest: Destination; collapsed: boolean }) {
   const [photos, setPhotos] = useState<Photo[]>([])
   const [uploading, setUploading] = useState(false)
   const [err, setErr] = useState('')
@@ -67,6 +67,33 @@ function DestPhotos({ dest }: { dest: Destination }) {
     setPhotos((prev) => prev.filter((p) => p.id !== id))
   }
 
+  // Collapsed: just show a summary strip
+  if (collapsed) {
+    return (
+      <div style={{ padding: '10px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {photos.slice(0, 5).map((p) => (
+            <div key={p.id} style={{ width: 28, height: 28, borderRadius: 4, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.1)', flexShrink: 0 }}>
+              <img src={photoUrl(p.storage_path)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            </div>
+          ))}
+          {photos.length === 0 && (
+            <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>No photos — click ▼ Photos to upload</span>
+          )}
+          {photos.length > 5 && (
+            <div style={{ width: 28, height: 28, borderRadius: 4, background: 'rgba(255,255,255,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, color: 'rgba(255,255,255,0.4)' }}>
+              +{photos.length - 5}
+            </div>
+          )}
+        </div>
+        {photos.length > 0 && (
+          <span style={{ fontSize: 11, color: 'rgba(255,255,255,0.25)' }}>{photos.length} photo{photos.length !== 1 ? 's' : ''}</span>
+        )}
+      </div>
+    )
+  }
+
+  // Expanded: full upload + grid
   return (
     <div style={{ padding: '16px 20px', borderTop: '1px solid rgba(255,255,255,0.06)', background: 'rgba(0,0,0,0.2)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -82,9 +109,9 @@ function DestPhotos({ dest }: { dest: Destination }) {
       {photos.length === 0 && !uploading && (
         <div
           onClick={() => fileRef.current?.click()}
-          style={{ border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 8, padding: '20px 0', textAlign: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.2)', fontSize: 12 }}
+          style={{ border: '1px dashed rgba(255,255,255,0.1)', borderRadius: 8, padding: '28px 0', textAlign: 'center', cursor: 'pointer', color: 'rgba(255,255,255,0.25)', fontSize: 13 }}
         >
-          Click to upload photos for {dest.city}
+          📷 Click to upload photos for {dest.city}
         </div>
       )}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 10 }}>
@@ -124,8 +151,11 @@ export default function DestinationManager() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  // Attendees stored as array of names in match_info
   const [attendees, setAttendees] = useState<string[]>([])
+  const [uploadingPreview, setUploadingPreview] = useState(false)
+  const [previewFile, setPreviewFile] = useState<File | null>(null)
+  const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null)
+  const previewInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => { load() }, [])
   useEffect(() => {
@@ -143,6 +173,8 @@ export default function DestinationManager() {
   function openNew() {
     setEditing({ ...EMPTY_DEST })
     setAttendees([])
+    setPreviewFile(null)
+    setPreviewObjectUrl(null)
     setIsNew(true)
     setError('')
   }
@@ -151,11 +183,24 @@ export default function DestinationManager() {
     setEditing({ ...d })
     const existingAttendees = (d.match_info as { attendees?: string[] } | null)?.attendees ?? []
     setAttendees(existingAttendees)
+    setPreviewFile(null)
+    setPreviewObjectUrl(null)
     setIsNew(false)
     setError('')
   }
 
-  function close() { setEditing(null); setAttendees([]) }
+  function handlePreviewSelect(file: File) {
+    setPreviewFile(file)
+    if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl)
+    setPreviewObjectUrl(URL.createObjectURL(file))
+  }
+
+  function close() {
+    setEditing(null)
+    setAttendees([])
+    setPreviewFile(null)
+    if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); setPreviewObjectUrl(null) }
+  }
 
   function toggleAttendee(name: string) {
     setAttendees((prev) => prev.includes(name) ? prev.filter((n) => n !== name) : [...prev, name])
@@ -170,7 +215,7 @@ export default function DestinationManager() {
         ? { ...(editing.match_info as object ?? {}), attendees }
         : editing.match_info ?? null
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         city: editing.city,
         lat: editing.lat,
         lng: editing.lng,
@@ -178,19 +223,34 @@ export default function DestinationManager() {
         date_range: editing.date_range,
         order: editing.order,
         match_info: matchInfo,
+        preview_image_url: editing.preview_image_url ?? null,
       }
 
+      let destId = editing.id!
+
       if (isNew) {
-        await adminApi.createDestination(payload)
+        const created = await adminApi.createDestination(payload)
+        destId = created.id
       } else {
-        await adminApi.updateDestination(editing.id!, payload)
+        await adminApi.updateDestination(destId, payload)
       }
+
+      // Upload preview image if one was selected
+      if (previewFile) {
+        setUploadingPreview(true)
+        const ext = previewFile.name.split('.').pop() ?? 'jpg'
+        const path = `previews/${destId}/preview.${ext}`
+        await uploadFile('photos', path, previewFile)
+        await adminApi.updateDestination(destId, { preview_image_url: path })
+      }
+
       await load()
       close()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Save failed')
     } finally {
       setSaving(false)
+      setUploadingPreview(false)
     }
   }
 
@@ -257,18 +317,18 @@ export default function DestinationManager() {
                     </div>
                   )}
                 </div>
-                <button
-                  onClick={() => setExpanded(isOpen ? null : d.id)}
-                  style={{ ...ghostBtn, fontSize: 11 }}
-                >
-                  {isOpen ? 'Hide Photos' : 'Photos'}
-                </button>
                 <button onClick={() => openEdit(d)} style={ghostBtn}>Edit</button>
                 <button onClick={() => del(d.id, d.city)} style={{ ...ghostBtn, color: 'rgba(255,68,68,0.6)' }}>Delete</button>
+                <button
+                  onClick={() => setExpanded(isOpen ? null : d.id)}
+                  style={{ ...ghostBtn, fontSize: 11, borderColor: isOpen ? 'rgba(0,204,68,0.4)' : undefined, color: isOpen ? '#00cc44' : undefined }}
+                >
+                  {isOpen ? '▲ Photos' : '▼ Photos'}
+                </button>
               </div>
 
-              {/* Expandable photos */}
-              {isOpen && <DestPhotos dest={d} />}
+              {/* Always-accessible photo section */}
+              <DestPhotos dest={d} collapsed={!isOpen} />
             </div>
           )
         })}
@@ -330,6 +390,59 @@ export default function DestinationManager() {
               </div>
             </div>
 
+            {/* Preview image */}
+            <div style={{ marginBottom: 24 }}>
+              <label style={labelStyle}>Map Pin Preview Image</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                {/* Thumbnail */}
+                <div
+                  onClick={() => previewInputRef.current?.click()}
+                  style={{
+                    width: 80, height: 56, borderRadius: 8, overflow: 'hidden',
+                    border: '1px dashed rgba(255,255,255,0.15)', background: '#161616',
+                    cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  {previewObjectUrl || editing.preview_image_url ? (
+                    <img
+                      src={previewObjectUrl ?? photoUrl(editing.preview_image_url!)}
+                      alt="preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 18, opacity: 0.25 }}>🏙</span>
+                  )}
+                </div>
+                <div style={{ flex: 1 }}>
+                  <button onClick={() => previewInputRef.current?.click()} style={greenBtnSm}>
+                    {editing.preview_image_url || previewObjectUrl ? 'Replace Image' : 'Upload Image'}
+                  </button>
+                  {(editing.preview_image_url || previewObjectUrl) && (
+                    <button
+                      onClick={() => {
+                        setEditing((p) => p ? { ...p, preview_image_url: null } : null)
+                        setPreviewFile(null)
+                        if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); setPreviewObjectUrl(null) }
+                      }}
+                      style={{ ...ghostBtn, marginLeft: 8, fontSize: 11 }}
+                    >
+                      Remove
+                    </button>
+                  )}
+                  <p style={{ margin: '6px 0 0', fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>
+                    Shown as the destination card image on the map
+                  </p>
+                </div>
+              </div>
+              <input
+                ref={previewInputRef}
+                type="file"
+                accept="image/*"
+                style={{ display: 'none' }}
+                onChange={(e) => e.target.files?.[0] && handlePreviewSelect(e.target.files[0])}
+              />
+            </div>
+
             {/* Attendees */}
             {friends.length > 0 && (
               <div style={{ marginBottom: 24 }}>
@@ -367,7 +480,7 @@ export default function DestinationManager() {
             {error && <div style={{ ...errStyle, marginBottom: 16 }}>{error}</div>}
 
             <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={save} disabled={saving} style={{ ...greenBtn, flex: 1 }}>{saving ? 'Saving…' : 'Save'}</button>
+              <button onClick={save} disabled={saving} style={{ ...greenBtn, flex: 1 }}>{uploadingPreview ? 'Uploading…' : saving ? 'Saving…' : 'Save'}</button>
               <button onClick={close} style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
             </div>
           </div>

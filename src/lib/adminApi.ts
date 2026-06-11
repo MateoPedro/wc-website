@@ -24,7 +24,7 @@ export const adminApi = {
   deletePhoto: (id: string) => req(`/api/admin/photos?id=${id}`, { method: 'DELETE' }),
 
   getDestinations: () => req<import('../types').Destination[]>('/api/admin/destinations'),
-  createDestination: (body: object) => req('/api/admin/destinations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
+  createDestination: (body: object) => req<import('../types').Destination>('/api/admin/destinations', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
   updateDestination: (id: string, body: object) => req(`/api/admin/destinations?id=${id}`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }),
   deleteDestination: (id: string) => req(`/api/admin/destinations?id=${id}`, { method: 'DELETE' }),
 

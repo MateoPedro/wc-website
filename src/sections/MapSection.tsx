@@ -6,6 +6,11 @@ import DestinationPanel from '../components/DestinationPanel'
 import type { Destination, Traveler } from '../types'
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
+
+function previewUrl(path: string) {
+  return `${SUPABASE_URL}/storage/v1/object/public/photos/${path}`
+}
 
 // ── Group destinations by city ─────────────────────────────
 
@@ -24,7 +29,9 @@ function makeDestinationEl(group: Destination[], token: string): HTMLElement {
   const primary = group[0]
   const matchCount = group.length
   const matchInfo = group[0].match_info as Record<string, unknown> | null
-  const imgUrl = `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${primary.lng},${primary.lat},14,0/280x160@2x?access_token=${token}`
+  const imgUrl = primary.preview_image_url
+    ? previewUrl(primary.preview_image_url)
+    : `https://api.mapbox.com/styles/v1/mapbox/satellite-v9/static/${primary.lng},${primary.lat},14,0/280x160@2x?access_token=${token}`
   const opponent = matchInfo ? String(matchInfo.opponent ?? '') : ''
   const venue = matchInfo ? String(matchInfo.venue ?? '') : ''
   const dates = group.map((d) => d.date_range).filter(Boolean).join(' · ')

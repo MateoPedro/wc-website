@@ -19,6 +19,7 @@ export interface Destination {
   date_range: string
   match_info: Record<string, unknown> | null
   order: number
+  preview_image_url: string | null
 }
 
 export interface Photo {
