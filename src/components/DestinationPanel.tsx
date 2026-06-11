@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getPhotosByDestination, getPhotoUrl, getTravelers } from '../lib/supabase'
-import { lenisInstance } from '../lib/lenis'
 import Lightbox from './Lightbox'
 import type { Destination, Photo, Traveler } from '../types'
 
@@ -35,12 +34,6 @@ export default function DestinationPanel({ destinations, onClose }: Props) {
   const [allTravelers, setAllTravelers] = useState<Traveler[]>([])
 
   useEffect(() => { getTravelers().then(setAllTravelers).catch(() => {}) }, [])
-
-  // Lock page scroll while panel is open
-  useEffect(() => {
-    lenisInstance?.stop()
-    return () => { lenisInstance?.start() }
-  }, [])
 
   const active = destinations?.[activeIndex] ?? null
   const matchInfo = active?.match_info as Record<string, unknown> | null
@@ -93,6 +86,7 @@ export default function DestinationPanel({ destinations, onClose }: Props) {
                 borderLeft: '1px solid rgba(255,255,255,0.07)',
                 backdropFilter: 'blur(24px)',
               }}
+              onWheel={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="shrink-0 px-7 pt-8 pb-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
