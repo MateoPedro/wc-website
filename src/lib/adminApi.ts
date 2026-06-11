@@ -45,8 +45,16 @@ export const adminApi = {
 }
 
 export async function uploadFile(bucket: string, storagePath: string, file: File): Promise<string> {
-  const { signedUrl } = await adminApi.getUploadUrl(bucket, storagePath)
-  const uploadRes = await fetch(signedUrl, { method: 'PUT', body: file, headers: { 'Content-Type': file.type } })
-  if (!uploadRes.ok) throw new Error('Upload failed')
-  return storagePath
+  const base64 = await new Promise<string>((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve((reader.result as string).split(',')[1])
+    reader.onerror = reject
+    reader.readAsDataURL(file)
+  })
+  const { path } = await req<{ path: string }>('/api/admin/upload', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ bucket, path: storagePath, base64, contentType: file.type }),
+  })
+  return path
 }

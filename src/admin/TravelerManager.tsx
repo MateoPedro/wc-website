@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { adminApi } from '../lib/adminApi'
-import { supabase } from '../lib/supabase'
+import { adminApi, uploadFile } from '../lib/adminApi'
 import type { Traveler } from '../types'
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
@@ -67,11 +66,7 @@ export default function TravelerManager() {
         const ext = avatarFile.name.split('.').pop() ?? 'jpg'
         const id = editing.id ?? `new-${Date.now()}`
         const path = `${id}.${ext}`
-        const { error: upErr } = await supabase.storage
-          .from('avatars')
-          .upload(path, avatarFile, { upsert: true, contentType: avatarFile.type })
-        if (upErr) throw new Error(`Avatar upload failed: ${upErr.message}`)
-        avatarPath = path
+        avatarPath = await uploadFile('avatars', path, avatarFile)
       }
 
       const payload = { ...editing, avatar_url: avatarPath }
