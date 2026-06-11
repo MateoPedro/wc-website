@@ -271,11 +271,6 @@ export default function MapSection() {
 
       scalePins(map.getZoom())
 
-      const allCoords = groups.map((g) => [g[0].lng, g[0].lat] as [number, number])
-      if (allCoords.length > 1) {
-        const bounds = allCoords.reduce((b, c) => b.extend(c), new mapboxgl.LngLatBounds(allCoords[0], allCoords[0]))
-        map.fitBounds(bounds, { padding: 180, maxZoom: 7, duration: 2200, essential: true })
-      }
     }
 
     if (map.isStyleLoaded()) apply()
