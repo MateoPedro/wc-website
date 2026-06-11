@@ -122,8 +122,7 @@ function StandingRow({ row, index }: { row: FDStandingRow; index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, x: -12 }}
-      whileInView={{ opacity: 1, x: 0 }}
-      viewport={{ once: true }}
+      animate={{ opacity: 1, x: 0 }}
       transition={{ delay: 0.05 * index, duration: 0.5, ease: EASE }}
       className="flex items-center px-4 py-3 text-sm"
       style={{
@@ -193,8 +192,8 @@ export default function ScoresSection() {
             {/* Group standings */}
             {data && data.standings.length > 0 && (
               <motion.div
-                initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }} transition={{ delay: 0.3, duration: 0.7 }}
+                initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3, duration: 0.7 }}
                 className="mt-10 rounded-xl overflow-hidden"
                 style={{ border: '1px solid rgba(255,255,255,0.07)' }}
               >
