@@ -98,108 +98,130 @@ export default function PredictorSection() {
 
               {!loading && entries.length > 0 && (
                 <div>
-                  {/* Header row */}
-                  <div
-                    className="grid gap-4 pb-3 mb-1 text-[10px] tracking-[0.3em] uppercase"
-                    style={{
-                      gridTemplateColumns: '40px 1fr 80px 80px',
-                      color: 'rgba(255,255,255,0.2)',
-                      borderBottom: '1px solid rgba(255,255,255,0.06)',
-                    }}
-                  >
-                    <span>#</span>
-                    <span>Player</span>
-                    <span className="text-right">Pts</span>
-                    <span className="text-right">Correct</span>
-                  </div>
-
-                  {entries.map((entry, i) => {
-                    const rank = i + 1
-                    const medal = MEDAL[rank]
-                    const isTop3 = rank <= 3
-
-                    return (
-                      <motion.div
-                        key={entry.id}
-                        initial={{ opacity: 0, x: -16 }}
-                        whileInView={{ opacity: 1, x: 0 }}
-                        viewport={{ once: true }}
-                        transition={{ delay: i * 0.06, duration: 0.6, ease: EASE }}
-                        className="grid gap-4 py-4 items-center"
-                        style={{
-                          gridTemplateColumns: '40px 1fr 80px 80px',
-                          borderBottom: '1px solid rgba(255,255,255,0.05)',
-                          background: isTop3 ? `linear-gradient(90deg, ${medal.color}08 0%, transparent 60%)` : 'transparent',
-                        }}
-                      >
-                        {/* Rank */}
-                        <span
+                  {/* ── Desktop table (md+): 4 columns ── */}
+                  <div className="hidden md:block">
+                    <div
+                      className="grid gap-4 pb-3 mb-1 text-[10px] tracking-[0.3em] uppercase"
+                      style={{
+                        gridTemplateColumns: '40px 1fr 80px 80px',
+                        color: 'rgba(255,255,255,0.2)',
+                        borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      }}
+                    >
+                      <span>#</span>
+                      <span>Player</span>
+                      <span className="text-right">Pts</span>
+                      <span className="text-right">Correct</span>
+                    </div>
+                    {entries.map((entry, i) => {
+                      const rank = i + 1
+                      const medal = MEDAL[rank]
+                      const isTop3 = rank <= 3
+                      return (
+                        <motion.div
+                          key={entry.id}
+                          initial={{ opacity: 0, x: -16 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: i * 0.06, duration: 0.6, ease: EASE }}
+                          className="grid gap-4 py-4 items-center"
                           style={{
-                            fontFamily: 'Bebas Neue, sans-serif',
-                            fontSize: 22,
-                            color: medal ? medal.color : 'rgba(255,255,255,0.2)',
-                            letterSpacing: '0.05em',
-                            lineHeight: 1,
+                            gridTemplateColumns: '40px 1fr 80px 80px',
+                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            background: isTop3 ? `linear-gradient(90deg, ${medal.color}08 0%, transparent 60%)` : 'transparent',
                           }}
                         >
-                          {rank}
-                        </span>
-
-                        {/* Name */}
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div
-                            className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold"
-                            style={{
-                              background: medal ? `${medal.color}22` : 'rgba(255,255,255,0.06)',
-                              color: medal ? medal.color : 'rgba(255,255,255,0.4)',
-                              border: `1px solid ${medal ? medal.color + '44' : 'rgba(255,255,255,0.08)'}`,
-                            }}
-                          >
-                            {entry.name.charAt(0).toUpperCase()}
+                          <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 22, color: medal ? medal.color : 'rgba(255,255,255,0.2)', letterSpacing: '0.05em', lineHeight: 1 }}>{rank}</span>
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold" style={{ background: medal ? `${medal.color}22` : 'rgba(255,255,255,0.06)', color: medal ? medal.color : 'rgba(255,255,255,0.4)', border: `1px solid ${medal ? medal.color + '44' : 'rgba(255,255,255,0.08)'}` }}>{entry.name.charAt(0).toUpperCase()}</div>
+                            <span className="text-sm font-medium truncate" style={{ color: isTop3 ? '#ffffff' : 'rgba(255,255,255,0.7)' }}>{entry.name}</span>
+                            {rank === 1 && <span className="text-xs shrink-0">👑</span>}
                           </div>
-                          <span
-                            className="text-sm font-medium truncate"
-                            style={{ color: isTop3 ? '#ffffff' : 'rgba(255,255,255,0.7)' }}
-                          >
-                            {entry.name}
-                          </span>
-                          {rank === 1 && (
-                            <span className="text-xs shrink-0">👑</span>
-                          )}
-                        </div>
-
-                        {/* Points */}
-                        <div className="text-right">
-                          <span
-                            style={{
-                              fontFamily: 'Bebas Neue, sans-serif',
-                              fontSize: 20,
-                              color: medal ? medal.color : 'rgba(255,255,255,0.6)',
-                              letterSpacing: '0.05em',
-                            }}
-                          >
-                            {entry.points}
-                          </span>
-                          <div className="text-[9px] tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                            pts
+                          <div className="text-right">
+                            <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 20, color: medal ? medal.color : 'rgba(255,255,255,0.6)', letterSpacing: '0.05em' }}>{entry.points}</span>
+                            <div className="text-[9px] tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.2)' }}>pts</div>
                           </div>
-                        </div>
-
-                        {/* Correct predictions */}
-                        <div className="text-right">
-                          <span
-                            className="text-sm"
-                            style={{ color: 'rgba(255,255,255,0.4)' }}
-                          >
-                            {entry.correct_predictions}
-                          </span>
-                          <div className="text-[9px] tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                            exact
+                          <div className="text-right">
+                            <span className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>{entry.correct_predictions}</span>
+                            <div className="text-[9px] tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.2)' }}>exact</div>
                           </div>
-                        </div>
-                      </motion.div>
-                    )
-                  })}
+                        </motion.div>
+                      )
+                    })}
+                  </div>
+
+                  {/* ── Mobile table: rank + name + pts only ── */}
+                  <div className="md:hidden">
+                    <div
+                      className="grid pb-3 mb-1 text-[10px] tracking-[0.3em] uppercase"
+                      style={{
+                        gridTemplateColumns: '36px 1fr 56px',
+                        color: 'rgba(255,255,255,0.2)',
+                        borderBottom: '1px solid rgba(255,255,255,0.06)',
+                      }}
+                    >
+                      <span>#</span>
+                      <span>Player</span>
+                      <span className="text-right">Pts</span>
+                    </div>
+                    {entries.map((entry, i) => {
+                      const rank = i + 1
+                      const medal = MEDAL[rank]
+                      const isTop3 = rank <= 3
+                      return (
+                        <motion.div
+                          key={entry.id}
+                          initial={{ opacity: 0, x: -12 }}
+                          whileInView={{ opacity: 1, x: 0 }}
+                          viewport={{ once: true }}
+                          transition={{ delay: i * 0.06, duration: 0.6, ease: EASE }}
+                          className="grid py-3.5 items-center"
+                          style={{
+                            gridTemplateColumns: '36px 1fr 56px',
+                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            background: isTop3 ? `linear-gradient(90deg, ${medal.color}08 0%, transparent 70%)` : 'transparent',
+                          }}
+                        >
+                          {/* Rank */}
+                          <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 20, color: medal ? medal.color : 'rgba(255,255,255,0.2)', letterSpacing: '0.05em', lineHeight: 1 }}>{rank}</span>
+
+                          {/* Name + avatar */}
+                          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                            <div
+                              className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold"
+                              style={{
+                                background: medal ? `${medal.color}22` : 'rgba(255,255,255,0.06)',
+                                color: medal ? medal.color : 'rgba(255,255,255,0.4)',
+                                border: `1px solid ${medal ? medal.color + '44' : 'rgba(255,255,255,0.08)'}`,
+                              }}
+                            >
+                              {entry.name.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span
+                                  className="text-sm font-medium truncate"
+                                  style={{ color: isTop3 ? '#ffffff' : 'rgba(255,255,255,0.75)' }}
+                                >
+                                  {entry.name}
+                                </span>
+                                {rank === 1 && <span className="text-xs shrink-0">👑</span>}
+                              </div>
+                              <div className="text-[10px] mt-0.5" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                                {entry.correct_predictions} exact
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Points */}
+                          <div className="text-right">
+                            <span style={{ fontFamily: 'Bebas Neue, sans-serif', fontSize: 22, color: medal ? medal.color : 'rgba(255,255,255,0.6)', letterSpacing: '0.05em' }}>{entry.points}</span>
+                            <div className="text-[9px] tracking-wider uppercase" style={{ color: 'rgba(255,255,255,0.2)' }}>pts</div>
+                          </div>
+                        </motion.div>
+                      )
+                    })}
+                  </div>
                 </div>
               )}
             </div>
