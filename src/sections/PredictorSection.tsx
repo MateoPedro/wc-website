@@ -21,7 +21,7 @@ export default function PredictorSection() {
         className="absolute inset-0 pointer-events-none"
         style={{
           background:
-            'radial-gradient(ellipse 55% 50% at 100% 0%, rgba(200,162,0,0.06) 0%, transparent 60%)',
+            'radial-gradient(ellipse 55% 50% at 100% 0%, rgba(0,102,0,0.12) 0%, transparent 60%)',
         }}
       />
 
@@ -59,7 +59,7 @@ export default function PredictorSection() {
               <br />
               <span
                 style={{
-                  background: 'linear-gradient(110deg, #C8A200, #ffd54f)',
+                  background: 'linear-gradient(110deg, #006600, #00cc44)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                   backgroundClip: 'text',
@@ -223,7 +223,7 @@ export default function PredictorSection() {
               {/* Trophy */}
               <div
                 className="w-14 h-14 rounded-2xl flex items-center justify-center text-3xl"
-                style={{ background: 'rgba(200,162,0,0.1)', border: '1px solid rgba(200,162,0,0.2)' }}
+                style={{ background: 'rgba(0,102,0,0.15)', border: '1px solid rgba(0,204,68,0.25)' }}
               >
                 🏆
               </div>
@@ -260,8 +260,8 @@ export default function PredictorSection() {
                 rel="noopener noreferrer"
                 className="flex items-center justify-between gap-3 px-5 py-3.5 rounded-xl font-medium text-sm transition-all duration-200 group"
                 style={{
-                  background: 'linear-gradient(110deg, #C8A200, #a07800)',
-                  color: '#000',
+                  background: 'linear-gradient(110deg, #006600, #00aa33)',
+                  color: '#fff',
                 }}
                 onMouseEnter={(e) => (e.currentTarget.style.opacity = '0.85')}
                 onMouseLeave={(e) => (e.currentTarget.style.opacity = '1')}
