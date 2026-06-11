@@ -1,6 +1,20 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
+import Cropper from 'react-easy-crop'
+import type { Area } from 'react-easy-crop'
 import { adminApi, uploadFile } from '../lib/adminApi'
 import type { Destination, Photo, Traveler } from '../types'
+
+async function getCroppedFile(imageSrc: string, pixelCrop: Area): Promise<File> {
+  const image = new Image()
+  image.src = imageSrc
+  await new Promise((res) => { image.onload = res })
+  const canvas = document.createElement('canvas')
+  canvas.width = pixelCrop.width
+  canvas.height = pixelCrop.height
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(image, pixelCrop.x, pixelCrop.y, pixelCrop.width, pixelCrop.height, 0, 0, pixelCrop.width, pixelCrop.height)
+  return new Promise((res) => canvas.toBlob((b) => res(new File([b!], 'preview.jpg', { type: 'image/jpeg' })), 'image/jpeg', 0.92))
+}
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
 
@@ -157,6 +171,12 @@ export default function DestinationManager() {
   const [previewObjectUrl, setPreviewObjectUrl] = useState<string | null>(null)
   const previewInputRef = useRef<HTMLInputElement>(null)
 
+  // Crop state
+  const [cropSrc, setCropSrc] = useState('')
+  const [crop, setCrop] = useState({ x: 0, y: 0 })
+  const [zoom, setZoom] = useState(1)
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null)
+
   useEffect(() => { load() }, [])
   useEffect(() => {
     adminApi.getTravelers().then(setTravelers).catch(() => {})
@@ -190,15 +210,29 @@ export default function DestinationManager() {
   }
 
   function handlePreviewSelect(file: File) {
+    setCropSrc(URL.createObjectURL(file))
+    setCrop({ x: 0, y: 0 })
+    setZoom(1)
+  }
+
+  const onCropComplete = useCallback((_: Area, pixels: Area) => {
+    setCroppedAreaPixels(pixels)
+  }, [])
+
+  async function applyCrop() {
+    if (!croppedAreaPixels || !cropSrc) return
+    const file = await getCroppedFile(cropSrc, croppedAreaPixels)
     setPreviewFile(file)
     if (previewObjectUrl) URL.revokeObjectURL(previewObjectUrl)
     setPreviewObjectUrl(URL.createObjectURL(file))
+    setCropSrc('')
   }
 
   function close() {
     setEditing(null)
     setAttendees([])
     setPreviewFile(null)
+    setCropSrc('')
     if (previewObjectUrl) { URL.revokeObjectURL(previewObjectUrl); setPreviewObjectUrl(null) }
   }
 
@@ -333,6 +367,43 @@ export default function DestinationManager() {
           )
         })}
       </div>
+
+      {/* Crop modal */}
+      {cropSrc && (
+        <div style={{ ...overlay, zIndex: 200 }} onClick={() => setCropSrc('')}>
+          <div style={{ ...modal, maxWidth: 480, padding: 24 }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+              <h3 style={{ ...headingStyle, fontSize: 18, margin: 0 }}>Crop Preview Image</h3>
+              <button onClick={() => setCropSrc('')} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)', cursor: 'pointer', fontSize: 20 }}>×</button>
+            </div>
+            <div style={{ position: 'relative', width: '100%', height: 260, borderRadius: 10, overflow: 'hidden', background: '#000' }}>
+              <Cropper
+                image={cropSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={16 / 9}
+                showGrid={false}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+              />
+            </div>
+            <div style={{ marginTop: 14 }}>
+              <label style={{ ...labelStyle, marginBottom: 6 }}>Zoom</label>
+              <input
+                type="range" min={1} max={3} step={0.01}
+                value={zoom}
+                onChange={(e) => setZoom(Number(e.target.value))}
+                style={{ width: '100%', accentColor: '#00cc44' }}
+              />
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 18 }}>
+              <button onClick={applyCrop} style={{ ...greenBtn, flex: 1 }}>Apply Crop</button>
+              <button onClick={() => setCropSrc('')} style={{ ...ghostBtn, flex: 1 }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Add / Edit modal */}
       {editing && (
