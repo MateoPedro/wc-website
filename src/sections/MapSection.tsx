@@ -404,19 +404,6 @@ export default function MapSection() {
         <span className="text-[10px] tracking-[0.4em] uppercase" style={{ color: 'rgba(255,255,255,0.25)' }}>The Journey</span>
       </motion.div>
 
-      {/* City count */}
-      {destinations.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-          className="absolute bottom-10 left-8 flex items-center gap-3 pointer-events-none"
-        >
-          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#00cc44' }} />
-          <span className="text-[11px] tracking-[0.2em] uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>
-            {groupByCity(destinations).length} {groupByCity(destinations).length === 1 ? 'city' : 'cities'} · {travelers.length} travelers
-          </span>
-        </motion.div>
-      )}
 
       <DestinationPanel destinations={activeGroup} onClose={() => setActiveGroup(null)} />
     </div>
