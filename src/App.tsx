@@ -49,8 +49,6 @@ export default function App() {
       <section id="predictor">
         <PredictorSection />
       </section>
-      {/* Spacer so last section isn't hidden behind mobile tab bar */}
-      <div className="h-20 md:hidden" />
     </div>
   )
 }

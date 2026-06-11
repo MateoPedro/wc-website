@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Home, MapPin, BarChart3, Music2, Trophy } from 'lucide-react'
 import { scrollTo } from '../lib/lenis'
 import { useActiveSection } from '../hooks/useActiveSection'
 
@@ -13,13 +12,6 @@ const allLinks = [
   { id: 'predictor', label: 'Predictor' },
 ]
 
-const mobileTabsAll = [
-  { id: 'hero',      label: 'Home',      Icon: Home },
-  { id: 'map',       label: 'Map',       Icon: MapPin },
-  { id: 'scores',    label: 'Scores',    Icon: BarChart3 },
-  { id: 'playlist',  label: 'Playlist',  Icon: Music2 },
-  { id: 'predictor', label: 'Predictor', Icon: Trophy },
-]
 
 export default function Navbar({ showScores = true }: { showScores?: boolean }) {
   const [scrolled, setScrolled] = useState(false)
@@ -32,7 +24,6 @@ export default function Navbar({ showScores = true }: { showScores?: boolean }) 
   }, [])
 
   const desktopLinks = allLinks.filter(l => l.id !== 'scores' || showScores)
-  const mobileTabs = mobileTabsAll.filter(t => t.id !== 'scores' || showScores)
 
   return (
     <>
@@ -130,50 +121,6 @@ export default function Navbar({ showScores = true }: { showScores?: boolean }) 
         </a>
       </div>
 
-      {/* ── Mobile bottom tab bar ─────────────────────────── */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden"
-        style={{
-          background: 'rgba(8,8,8,0.96)',
-          borderTop: '1px solid rgba(255,255,255,0.07)',
-          backdropFilter: 'blur(24px)',
-          WebkitBackdropFilter: 'blur(24px)',
-          paddingBottom: 'env(safe-area-inset-bottom)',
-        }}
-      >
-        {mobileTabs.map(({ id, label, Icon }) => {
-          const isActive = active === id
-          return (
-            <button
-              key={id}
-              onClick={() => scrollTo(`#${id}`, { offset: id === 'hero' ? 0 : undefined })}
-              className="flex-1 flex flex-col items-center justify-center py-3 gap-1 transition-all duration-200"
-              style={{ color: isActive ? '#ffffff' : 'rgba(255,255,255,0.3)' }}
-            >
-              <div className="relative">
-                <Icon
-                  size={20}
-                  strokeWidth={isActive ? 2 : 1.5}
-                  style={{ color: isActive ? '#00cc44' : 'rgba(255,255,255,0.3)', transition: 'color 0.2s' }}
-                />
-                {isActive && (
-                  <motion.div
-                    layoutId="tab-dot"
-                    className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full"
-                    style={{ background: '#00cc44' }}
-                  />
-                )}
-              </div>
-              <span
-                className="text-[9px] tracking-[0.15em] uppercase font-medium transition-colors duration-200"
-                style={{ color: isActive ? 'rgba(255,255,255,0.8)' : 'rgba(255,255,255,0.25)' }}
-              >
-                {label}
-              </span>
-            </button>
-          )
-        })}
-      </nav>
     </>
   )
 }
