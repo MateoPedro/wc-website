@@ -86,6 +86,7 @@ export default function DestinationPanel({ destinations, onClose }: Props) {
                 borderLeft: '1px solid rgba(255,255,255,0.07)',
                 backdropFilter: 'blur(24px)',
               }}
+              onWheel={(e) => e.stopPropagation()}
             >
               {/* Header */}
               <div className="shrink-0 px-7 pt-8 pb-0" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
@@ -223,7 +224,7 @@ export default function DestinationPanel({ destinations, onClose }: Props) {
               })()}
 
               {/* Photos */}
-              <div className="flex-1 overflow-y-auto px-7 py-5">
+              <div className="flex-1 overflow-y-auto px-7 py-5" style={{ overscrollBehavior: 'contain' }}>
                 <div className="text-[10px] tracking-[0.3em] uppercase mb-4" style={{ color: 'rgba(255,255,255,0.2)' }}>
                   Photos
                 </div>
