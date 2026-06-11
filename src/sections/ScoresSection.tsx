@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect } from 'react'
-import { motion, useMotionValue, useSpring, useInView } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
 import { useScores } from '../hooks/useScores'
 import { isPortugal, formatKickoff, type FDMatch, type FDStandingRow } from '../lib/footballData'
 
@@ -29,30 +29,6 @@ function AnimatedScore({ score }: { score: number | null }) {
   return <span ref={ref}>{displayed}</span>
 }
 
-// ── 3D tilt hook ──────────────────────────────────────────
-
-function useTilt(maxDeg = 5) {
-  const ref = useRef<HTMLDivElement>(null)
-  const rX = useSpring(useMotionValue(0), { stiffness: 200, damping: 26 })
-  const rY = useSpring(useMotionValue(0), { stiffness: 200, damping: 26 })
-
-  function onMouseMove(e: React.MouseEvent) {
-    const rect = ref.current?.getBoundingClientRect()
-    if (!rect) return
-    const x = (e.clientY - rect.top) / rect.height - 0.5
-    const y = (e.clientX - rect.left) / rect.width - 0.5
-    rX.set(-x * maxDeg * 2)
-    rY.set(y * maxDeg * 2)
-  }
-
-  function onMouseLeave() {
-    rX.set(0)
-    rY.set(0)
-  }
-
-  return { ref, rotateX: rX, rotateY: rY, onMouseMove, onMouseLeave }
-}
-
 // ── Match card ────────────────────────────────────────────
 
 function statusBadge(status: FDMatch['status']) {
@@ -62,7 +38,6 @@ function statusBadge(status: FDMatch['status']) {
 }
 
 function MatchCard({ match, index }: { match: FDMatch; index: number }) {
-  const tilt = useTilt()
   const porIsHome = isPortugal(match.homeTeam.id)
   const por = porIsHome ? match.homeTeam : match.awayTeam
   const opp = porIsHome ? match.awayTeam : match.homeTeam
@@ -80,22 +55,12 @@ function MatchCard({ match, index }: { match: FDMatch; index: number }) {
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true }}
       transition={{ delay: index * 0.1, duration: 0.7, ease: EASE }}
-      style={{ perspective: 800 }}
+      className="rounded-2xl p-6"
+      style={{
+        background: 'rgba(255,255,255,0.04)',
+        border: `1px solid ${porWon ? 'rgba(0,204,68,0.25)' : drew ? 'rgba(200,162,0,0.2)' : 'rgba(255,255,255,0.07)'}`,
+      }}
     >
-      <motion.div
-        ref={tilt.ref}
-        onMouseMove={tilt.onMouseMove}
-        onMouseLeave={tilt.onMouseLeave}
-        style={{
-          rotateX: tilt.rotateX,
-          rotateY: tilt.rotateY,
-          transformStyle: 'preserve-3d',
-          background: 'rgba(255,255,255,0.04)',
-          border: `1px solid ${porWon ? 'rgba(0,204,68,0.25)' : drew ? 'rgba(200,162,0,0.2)' : 'rgba(255,255,255,0.07)'}`,
-          borderRadius: 16,
-          padding: 24,
-        }}
-      >
         {/* Status + date */}
         <div className="flex items-center justify-between mb-5">
           <span
@@ -146,7 +111,6 @@ function MatchCard({ match, index }: { match: FDMatch; index: number }) {
             </div>
           </div>
         </div>
-      </motion.div>
     </motion.div>
   )
 }
