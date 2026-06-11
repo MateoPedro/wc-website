@@ -190,7 +190,6 @@ export default function MapSection() {
   const ownerMarkerRef = useRef<mapboxgl.Marker | null>(null)
   const destMarkersRef = useRef<mapboxgl.Marker[]>([])
   const destElsRef = useRef<HTMLElement[]>([])
-  const travelerLinesDrawnRef = useRef(false)
 
   const [activeGroup, setActiveGroup] = useState<Destination[] | null>(null)
   const [interactive, setInteractive] = useState(false)
@@ -328,64 +327,6 @@ export default function MapSection() {
     else map.once('load', apply)
   }, [travelers])
 
-  // One-time traveler → first destination lines on load
-  useEffect(() => {
-    const map = mapRef.current
-    if (!map || !travelers?.length || !destinations?.length) return
-    if (travelerLinesDrawnRef.current) return
-    travelerLinesDrawnRef.current = true
-
-    const firstDest = [...destinations].sort((a, b) => a.order - b.order)[0]
-    const features = travelers
-      .filter((t) => t.lat && t.lng)
-      .map((t) => ({
-        type: 'Feature' as const,
-        properties: {},
-        geometry: { type: 'LineString' as const, coordinates: [[t.lng, t.lat], [firstDest.lng, firstDest.lat]] },
-      }))
-    if (!features.length) return
-
-    const SRC = 'traveler-lines'
-    const LAYER = 'traveler-lines-layer'
-
-    const apply = () => {
-      if (map.getSource(SRC)) return
-      map.addSource(SRC, { type: 'geojson', data: { type: 'FeatureCollection', features } })
-      map.addLayer({
-        id: LAYER, type: 'line', source: SRC,
-        layout: { 'line-join': 'round', 'line-cap': 'round' },
-        paint: { 'line-color': '#C8A200', 'line-width': 1.2, 'line-opacity': 0, 'line-dasharray': [3, 4] },
-      })
-
-      const FADE_IN = 900, HOLD = 2200, FADE_OUT = 1000
-      const TOTAL = FADE_IN + HOLD + FADE_OUT
-      const start = performance.now()
-      let raf: number
-
-      function tick(ts: number) {
-        const t = ts - start
-        let opacity: number
-        if (t < FADE_IN) {
-          opacity = (t / FADE_IN) * 0.55
-        } else if (t < FADE_IN + HOLD) {
-          opacity = 0.55
-        } else if (t < TOTAL) {
-          opacity = 0.55 * (1 - (t - FADE_IN - HOLD) / FADE_OUT)
-        } else {
-          if (map?.getLayer(LAYER)) map.removeLayer(LAYER)
-          if (map?.getSource(SRC)) map.removeSource(SRC)
-          return
-        }
-        if (map?.getLayer(LAYER)) map.setPaintProperty(LAYER, 'line-opacity', opacity)
-        raf = requestAnimationFrame(tick)
-      }
-      raf = requestAnimationFrame(tick)
-      return () => cancelAnimationFrame(raf)
-    }
-
-    if (map.isStyleLoaded()) apply()
-    else map.once('load', apply)
-  }, [travelers, destinations])
 
   if (!TOKEN) {
     return (
