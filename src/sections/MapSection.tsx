@@ -137,6 +137,43 @@ function makeOwnerEl(t: Traveler): HTMLElement {
   return wrap
 }
 
+// ── Friend pin ────────────────────────────────────────────
+
+function makeTravelerEl(t: Traveler): HTMLElement {
+  const wrap = document.createElement('div')
+  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;'
+
+  const ring = document.createElement('div')
+  ring.style.cssText = 'width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,0.7);background:#111;overflow:hidden;display:flex;align-items:center;justify-content:center;box-shadow:0 0 10px rgba(0,0,0,0.6);transition:transform 0.15s ease;'
+  ring.onmouseenter = () => { ring.style.transform = 'scale(1.12)' }
+  ring.onmouseleave = () => { ring.style.transform = 'scale(1)' }
+
+  if (t.avatar_url) {
+    const img = document.createElement('img')
+    img.src = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/avatars/${t.avatar_url}`
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;'
+    img.onerror = () => { img.style.display = 'none'; ring.appendChild(initEl()) }
+    ring.appendChild(img)
+  } else {
+    ring.appendChild(initEl())
+  }
+
+  function initEl() {
+    const el = document.createElement('div')
+    el.style.cssText = 'font-size:11px;font-weight:600;color:rgba(255,255,255,0.9);font-family:Inter,sans-serif;'
+    el.textContent = t.name.slice(0, 2).toUpperCase()
+    return el
+  }
+
+  const label = document.createElement('div')
+  label.style.cssText = 'font-size:9px;font-weight:500;color:rgba(255,255,255,0.8);font-family:Inter,sans-serif;letter-spacing:0.04em;text-shadow:0 1px 6px rgba(0,0,0,0.9);white-space:nowrap;'
+  label.textContent = t.name
+
+  wrap.appendChild(ring)
+  wrap.appendChild(label)
+  return wrap
+}
+
 // ── Animated route ─────────────────────────────────────────
 
 const DASH_SEQUENCES: number[][] = [
@@ -215,9 +252,11 @@ export default function MapSection() {
       cancelAnimationFrame(rafRef.current)
       ownerMarkerRef.current?.remove()
       destMarkersRef.current.forEach((m) => m.remove())
+      travelerMarkersRef.current.forEach((m) => m.remove())
       ownerMarkerRef.current = null
       destMarkersRef.current = []
       destElsRef.current = []
+      travelerMarkersRef.current = []
       map.remove()
       mapRef.current = null
     }
@@ -282,7 +321,9 @@ export default function MapSection() {
     else map.once('load', apply)
   }, [destinations])
 
-  // Owner pin only
+  // All traveler pins
+  const travelerMarkersRef = useRef<mapboxgl.Marker[]>([])
+
   useEffect(() => {
     const map = mapRef.current
     if (!map || travelers.length === 0) return
@@ -290,18 +331,21 @@ export default function MapSection() {
     const apply = () => {
       ownerMarkerRef.current?.remove()
       ownerMarkerRef.current = null
+      travelerMarkersRef.current.forEach((m) => m.remove())
+      travelerMarkersRef.current = []
 
-      const owner = travelers.find((t) => t.is_owner)
-      if (!owner) return
-
-      const el = makeOwnerEl(owner)
-      const popup = new mapboxgl.Popup({ closeButton: false, className: 'map-popup', offset: 30 })
-        .setHTML(`<div style="font-family:Inter,sans-serif;min-width:140px;"><div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;">${owner.name}</div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:${owner.note ? '5px' : '0'};">📍 ${owner.current_city}</div>${owner.note ? `<div style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">${owner.note}</div>` : ''}</div>`)
-
-      ownerMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
-        .setLngLat([owner.lng, owner.lat])
-        .setPopup(popup)
-        .addTo(map)
+      travelers.forEach((t) => {
+        if (!t.lat || !t.lng) return
+        const el = t.is_owner ? makeOwnerEl(t) : makeTravelerEl(t)
+        const popup = new mapboxgl.Popup({ closeButton: false, className: 'map-popup', offset: t.is_owner ? 30 : 24 })
+          .setHTML(`<div style="font-family:Inter,sans-serif;min-width:120px;"><div style="font-size:13px;font-weight:600;color:#fff;margin-bottom:2px;">${t.name}</div><div style="font-size:11px;color:rgba(255,255,255,0.4);margin-bottom:${t.note ? '5px' : '0'};">📍 ${t.current_city}</div>${t.note ? `<div style="font-size:11px;color:rgba(255,255,255,0.6);line-height:1.5;">${t.note}</div>` : ''}</div>`)
+        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+          .setLngLat([t.lng, t.lat])
+          .setPopup(popup)
+          .addTo(map)
+        if (t.is_owner) ownerMarkerRef.current = marker
+        else travelerMarkersRef.current.push(marker)
+      })
     }
 
     if (map.isStyleLoaded()) apply()
