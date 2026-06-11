@@ -146,15 +146,15 @@ const DASH_SEQUENCES: number[][] = [
   [0, 1.5, 2.5, 2.5], [0, 2, 2, 3], [0, 2, 1, 4],
 ]
 
-function startRouteAnimation(map: mapboxgl.Map): number {
+function startRouteAnimation(map: mapboxgl.Map, layerId = 'route-animated'): number {
   let step = 0
   let rafId: number
   function tick(ts: number) {
     const next = Math.floor(ts / 60) % DASH_SEQUENCES.length
     if (next !== step) {
       step = next
-      if (map.getLayer('route-animated'))
-        map.setPaintProperty('route-animated', 'line-dasharray', DASH_SEQUENCES[step])
+      if (map.getLayer(layerId))
+        map.setPaintProperty(layerId, 'line-dasharray', DASH_SEQUENCES[step])
     }
     rafId = requestAnimationFrame(tick)
   }
@@ -281,6 +281,24 @@ export default function MapSection() {
     if (map.isStyleLoaded()) apply()
     else map.once('load', apply)
   }, [destinations])
+
+  // Hardcoded SFO → Houston segment
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map) return
+    const apply = () => {
+      if (map.getSource('sfo-houston')) return
+      map.addSource('sfo-houston', {
+        type: 'geojson',
+        data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [[-122.4194, 37.7749], [-95.3698, 29.7604]] } },
+      })
+      map.addLayer({ id: 'sfo-houston-base', type: 'line', source: 'sfo-houston', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#00cc44', 'line-width': 1.5, 'line-opacity': 0.25 } })
+      map.addLayer({ id: 'sfo-houston-animated', type: 'line', source: 'sfo-houston', layout: { 'line-join': 'round', 'line-cap': 'round' }, paint: { 'line-color': '#00cc44', 'line-width': 2.5, 'line-opacity': 0.85, 'line-dasharray': [0, 2, 4] } })
+      startRouteAnimation(map, 'sfo-houston-animated')
+    }
+    if (map.isStyleLoaded()) apply()
+    else map.once('load', apply)
+  }, [])
 
   // Owner pin only
   useEffect(() => {
