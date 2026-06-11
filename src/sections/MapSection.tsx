@@ -23,21 +23,6 @@ function groupByCity(destinations: Destination[]): Destination[][] {
   return Array.from(map.values())
 }
 
-// ── Inject pulse keyframes once ────────────────────────────
-
-function injectPulseStyles() {
-  if (document.getElementById('map-pin-pulse-styles')) return
-  const s = document.createElement('style')
-  s.id = 'map-pin-pulse-styles'
-  s.textContent = `
-    @keyframes mapPinPulse {
-      0%   { transform: translate(-50%, -50%) scale(0.6); opacity: 0.7; }
-      100% { transform: translate(-50%, -50%) scale(2.8); opacity: 0; }
-    }
-  `
-  document.head.appendChild(s)
-}
-
 // ── Destination card ───────────────────────────────────────
 
 function makeDestinationEl(group: Destination[], token: string): HTMLElement {
@@ -51,19 +36,10 @@ function makeDestinationEl(group: Destination[], token: string): HTMLElement {
   const venue = matchInfo ? String(matchInfo.venue ?? '') : ''
   const dates = group.map((d) => d.date_range).filter(Boolean).join(' · ')
 
-  injectPulseStyles()
-
   const wrap = document.createElement('div')
-  wrap.style.cssText = 'position:relative;display:flex;flex-direction:column;align-items:center;cursor:pointer;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.8));transition:filter 0.18s ease;will-change:transform;'
+  wrap.style.cssText = 'display:flex;flex-direction:column;align-items:center;cursor:pointer;filter:drop-shadow(0 4px 16px rgba(0,0,0,0.8));transition:filter 0.18s ease;will-change:transform;'
   wrap.onmouseenter = () => (wrap.style.filter = 'drop-shadow(0 6px 20px rgba(0,204,68,0.3))')
   wrap.onmouseleave = () => (wrap.style.filter = 'drop-shadow(0 4px 16px rgba(0,0,0,0.8))')
-
-  // Pulse rings at the anchor point (bottom centre of the wrap)
-  for (let i = 0; i < 2; i++) {
-    const ring = document.createElement('div')
-    ring.style.cssText = `position:absolute;bottom:0;left:50%;width:18px;height:18px;border-radius:50%;border:1.5px solid rgba(0,204,68,0.65);pointer-events:none;animation:mapPinPulse 2.2s ease-out ${i * 1.1}s infinite;`
-    wrap.appendChild(ring)
-  }
 
   const card = document.createElement('div')
   card.style.cssText = 'width:130px;border-radius:10px;overflow:hidden;border:1.5px solid rgba(0,204,68,0.35);background:#0a0a0a;'
@@ -104,9 +80,14 @@ function makeDestinationEl(group: Destination[], token: string): HTMLElement {
   venueEl.style.cssText = 'font-size:9px;color:rgba(0,204,68,0.6);font-family:Inter,sans-serif;margin-top:2px;letter-spacing:0.03em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;'
   venueEl.textContent = venue
 
+  const tapLabel = document.createElement('div')
+  tapLabel.style.cssText = 'margin-top:6px;font-size:9px;color:rgba(0,204,68,0.55);font-family:Inter,sans-serif;letter-spacing:0.08em;text-transform:uppercase;'
+  tapLabel.textContent = 'Tap for more →'
+
   info.appendChild(cityEl)
   info.appendChild(detailEl)
   if (venue) info.appendChild(venueEl)
+  info.appendChild(tapLabel)
 
   card.appendChild(imgWrap)
   card.appendChild(info)
