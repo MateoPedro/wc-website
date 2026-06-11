@@ -186,9 +186,9 @@ export default function MapSection() {
     const map = new mapboxgl.Map({
       container: containerRef.current,
       style: 'mapbox://styles/mapbox/dark-v11',
-      center: [-95, 42],
-      zoom: 3.2,
-      minZoom: 2.5,
+      center: [-102, 38],
+      zoom: 2.8,
+      minZoom: 2,
       maxZoom: 14,
       maxBounds: [[-175, 12], [-50, 85]],
       projection: 'mercator',
