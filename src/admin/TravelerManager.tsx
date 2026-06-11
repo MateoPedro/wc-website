@@ -182,7 +182,7 @@ export default function TravelerManager() {
 
       {/* Crop modal */}
       {cropSrc && (
-        <div style={overlay} onClick={() => setCropSrc('')}>
+        <div style={{ ...overlay, zIndex: 200 }} onClick={() => setCropSrc('')}>
           <div style={{ ...modal, maxWidth: 440, padding: 24 }} onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
               <h3 style={{ ...headingStyle, fontSize: 18, margin: 0 }}>Crop Avatar</h3>
