@@ -120,7 +120,7 @@ export default function HeroSection({ heroMessage }: { heroMessage?: string }) {
       {/* Text content — anchored to bottom */}
       <motion.div
         style={{ y: textY, opacity: textOpacity }}
-        className="relative z-10 flex-1 flex flex-col justify-end px-8 md:px-16 lg:px-24 pt-28 pb-24"
+        className="relative z-10 flex-1 flex flex-col justify-end px-6 md:px-16 lg:px-24 pt-14 md:pt-28 pb-32 md:pb-24"
       >
         <motion.div
           variants={staggerContainer}
@@ -211,7 +211,7 @@ export default function HeroSection({ heroMessage }: { heroMessage?: string }) {
         initial="hidden"
         animate="show"
         onClick={() => scrollTo('#map')}
-        className="absolute bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-10"
+        className="absolute bottom-24 md:bottom-10 left-1/2 -translate-x-1/2 flex flex-col items-center gap-3 z-10"
       >
         <span
           className="text-[10px] tracking-[0.4em] uppercase font-medium"

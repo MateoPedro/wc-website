@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getPhotosByDestination, getPhotoUrl, getTravelers } from '../lib/supabase'
+import { lenisInstance } from '../lib/lenis'
 import Lightbox from './Lightbox'
 import type { Destination, Photo, Traveler } from '../types'
 
@@ -52,6 +53,12 @@ export default function DestinationPanel({ destinations, onClose }: Props) {
       .catch(console.error)
       .finally(() => setLoadingPhotos(false))
   }, [active?.id])
+
+  // Lock background scroll while panel is open
+  useEffect(() => {
+    lenisInstance?.stop()
+    return () => lenisInstance?.start()
+  }, [])
 
   // Close on Escape
   useEffect(() => {

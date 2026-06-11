@@ -2,6 +2,14 @@ import { useEffect, useState } from 'react'
 import { motion, useMotionValue, useSpring } from 'framer-motion'
 
 export default function CustomCursor() {
+  const [isTouch] = useState(() => {
+    if (typeof window === 'undefined') return false
+    return (
+      window.matchMedia('(pointer: coarse)').matches ||
+      navigator.maxTouchPoints > 0 ||
+      'ontouchstart' in window
+    )
+  })
   const [visible, setVisible] = useState(false)
   const [clicking, setClicking] = useState(false)
 
@@ -32,6 +40,8 @@ export default function CustomCursor() {
       document.removeEventListener('mouseup', onUp)
     }
   }, [mouseX, mouseY])
+
+  if (isTouch) return null
 
   return (
     <>
