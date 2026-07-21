@@ -92,11 +92,14 @@ export default function DestinationPanel({ destinations, onClose }: Props) {
         const zip = new JSZip()
         files.forEach((f) => zip.file(f.name, f))
         const blob = await zip.generateAsync({ type: 'blob' })
+        const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
-        a.href = URL.createObjectURL(blob)
+        a.href = url
         a.download = `${city}-photos.zip`
+        document.body.appendChild(a)
         a.click()
-        URL.revokeObjectURL(a.href)
+        document.body.removeChild(a)
+        setTimeout(() => URL.revokeObjectURL(url), 2000)
       }
     } catch (e) {
       if (e instanceof Error && e.name !== 'AbortError') console.error('Save failed:', e)
