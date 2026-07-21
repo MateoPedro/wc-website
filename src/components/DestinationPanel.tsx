@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import JSZip from 'jszip'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getPhotosByDestination, getPhotoUrl, getTravelers } from '../lib/supabase'
 import { lenisInstance } from '../lib/lenis'
@@ -33,6 +34,8 @@ export default function DestinationPanel({ destinations, onClose }: Props) {
   const [loadingPhotos, setLoadingPhotos] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
   const [allTravelers, setAllTravelers] = useState<Traveler[]>([])
+  const [saving, setSaving] = useState(false)
+  const [saveProgress, setSaveProgress] = useState('')
 
   useEffect(() => { getTravelers().then(setAllTravelers).catch(() => {}) }, [])
 
@@ -66,6 +69,42 @@ export default function DestinationPanel({ destinations, onClose }: Props) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  async function savePhotos() {
+    if (photos.length === 0 || saving) return
+    setSaving(true)
+    try {
+      const files: File[] = []
+      for (let i = 0; i < photos.length; i++) {
+        setSaveProgress(`${i + 1} / ${photos.length}`)
+        const res = await fetch(getPhotoUrl(photos[i].storage_path))
+        const blob = await res.blob()
+        const ext = blob.type.split('/')[1]?.replace('jpeg', 'jpg') ?? 'jpg'
+        files.push(new File([blob], `${city}-${i + 1}.${ext}`, { type: blob.type }))
+      }
+
+      // Mobile: native share sheet → Photos app
+      if (typeof navigator.canShare === 'function' && navigator.canShare({ files })) {
+        await navigator.share({ files, title: `${city} Photos` })
+      } else {
+        // Desktop fallback: zip download
+        setSaveProgress('Zipping…')
+        const zip = new JSZip()
+        files.forEach((f) => zip.file(f.name, f))
+        const blob = await zip.generateAsync({ type: 'blob' })
+        const a = document.createElement('a')
+        a.href = URL.createObjectURL(blob)
+        a.download = `${city}-photos.zip`
+        a.click()
+        URL.revokeObjectURL(a.href)
+      }
+    } catch (e) {
+      if (e instanceof Error && e.name !== 'AbortError') console.error('Save failed:', e)
+    } finally {
+      setSaving(false)
+      setSaveProgress('')
+    }
+  }
 
   const city = destinations?.[0]?.city ?? ''
   const venue = matchInfo ? String(matchInfo.venue ?? '') : ''
@@ -232,8 +271,40 @@ export default function DestinationPanel({ destinations, onClose }: Props) {
 
               {/* Photos */}
               <div className="flex-1 overflow-y-auto px-7 py-5" style={{ overscrollBehavior: 'contain' }}>
-                <div className="text-[10px] tracking-[0.3em] uppercase mb-4" style={{ color: 'rgba(255,255,255,0.2)' }}>
-                  Photos
+                <div className="flex items-center justify-between mb-4">
+                  <div className="text-[10px] tracking-[0.3em] uppercase" style={{ color: 'rgba(255,255,255,0.2)' }}>
+                    Photos {photos.length > 0 && `· ${photos.length}`}
+                  </div>
+                  {photos.length > 0 && (
+                    <button
+                      onClick={savePhotos}
+                      disabled={saving}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all"
+                      style={{
+                        background: saving ? 'rgba(0,204,68,0.08)' : 'rgba(0,204,68,0.12)',
+                        border: '1px solid rgba(0,204,68,0.25)',
+                        color: saving ? 'rgba(0,204,68,0.5)' : '#00cc44',
+                      }}
+                    >
+                      {saving ? (
+                        <>
+                          <svg width="11" height="11" viewBox="0 0 11 11" fill="none" className="animate-spin">
+                            <circle cx="5.5" cy="5.5" r="4.5" stroke="currentColor" strokeWidth="1.5" strokeDasharray="14 6" />
+                          </svg>
+                          {saveProgress}
+                        </>
+                      ) : (
+                        <>
+                          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                            <polyline points="7 10 12 15 17 10" />
+                            <line x1="12" y1="15" x2="12" y2="3" />
+                          </svg>
+                          Save all
+                        </>
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {loadingPhotos && (
