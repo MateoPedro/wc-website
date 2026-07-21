@@ -45,16 +45,20 @@ export const adminApi = {
 }
 
 export async function uploadFile(bucket: string, storagePath: string, file: File): Promise<string> {
-  const base64 = await new Promise<string>((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve((reader.result as string).split(',')[1])
-    reader.onerror = reject
-    reader.readAsDataURL(file)
+  // Get a signed upload URL so the file goes directly to Supabase Storage,
+  // bypassing Vercel's 4.5 MB function body limit.
+  const { signedUrl } = await req<{ signedUrl: string; token: string; path: string }>(
+    '/api/admin/upload-url',
+    { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ bucket, path: storagePath }) },
+  )
+  const res = await fetch(signedUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type },
+    body: file,
   })
-  const { path } = await req<{ path: string }>('/api/admin/upload', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ bucket, path: storagePath, base64, contentType: file.type }),
-  })
-  return path
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText)
+    throw new Error(`Upload failed: ${text}`)
+  }
+  return storagePath
 }
